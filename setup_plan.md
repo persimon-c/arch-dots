@@ -136,7 +136,9 @@ sudo pacman -S nvidia nvidia-utils nvidia-settings
 sudo mkinitcpio -P
 
 # Add to GRUB kernel parameters in /etc/default/grub:
-# GRUB_CMDLINE_LINUX_DEFAULT="... nvidia-drm.modeset=1"
+# GRUB_CMDLINE_LINUX_DEFAULT="... nvidia-drm.modeset=1 ibt=off"
+# ibt=off disables Intel CET enforcement — required on some kernel versions
+# where the NVIDIA driver fails to load without it. Harmless if not needed.
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
@@ -144,7 +146,12 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 ```bash
 # ~/.config/hypr/hyprland.conf
-env = WLR_DRM_DEVICES,/dev/dri/card1
+# Do NOT hardcode /dev/dri/card1 — device numbering is not stable across boots.
+# After first boot, find the stable AMD GPU path:
+#   ls -la /dev/dri/by-path/
+# Look for the entry pointing to a cardN device on the AMD PCI address (will contain "amd" or match the iGPU PCI slot).
+# Use that full /dev/dri/by-path/... symlink as the value instead.
+env = WLR_DRM_DEVICES,/dev/dri/by-path/<amd-pci-path-here>
 env = LIBVA_DRIVER_NAME,radeonsi
 env = WLR_NO_HARDWARE_CURSORS,1
 ```
@@ -173,7 +180,7 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia appname
 | Display manager | SDDM | Supports custom anime/pixel art themes, Wayland compatible |
 | Init system | systemd | Arch default, no reason to change |
 | AUR helper | yay | Most popular, well maintained |
-| Microcode | amd-ucode | CPU stability and security patches |
+| Power/fan control | asusctl + supergfxctl | ASUS-native control — fan curves, performance profiles, GPU switching. Linux equivalent of GHelper/Armoury Crate |
 
 ### Desktop Environment
 
@@ -192,14 +199,6 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia appname
 ### SDDM Theme
 
 Custom pixel art / anime theme. Target aesthetic: character sprite, clock display, minimal login panel. Theme to be sourced from GitHub community SDDM themes post-install.
-
-Auto-login configuration:
-```ini
-# /etc/sddm.conf.d/autologin.conf
-[Autologin]
-User=simone
-Session=hyprland
-```
 
 ### Terminal & Shell
 
@@ -285,17 +284,30 @@ sudo pacman -S bluez bluez-utils blueman
 sudo systemctl enable bluetooth
 ```
 
-### Power Management
+### Power Management & Fan Control
+
+The FX505DT is an ASUS laptop, so `asusctl` is the Linux equivalent of GHelper. It controls fan curves, performance profiles (Silent/Balanced/Turbo), and some LED/keyboard settings. `supergfxctl` handles GPU switching if needed.
 
 ```bash
-sudo pacman -S power-profiles-daemon
-sudo systemctl enable power-profiles-daemon
+# Add asus-linux repo (these packages are not in the main Arch repos)
+yay -S asusctl supergfxctl
+sudo systemctl enable --now asusd
+sudo systemctl enable --now supergfxd
 ```
 
-Three switchable modes via Eww bar widget:
-- `performance` — default, max CPU
-- `balanced` — smart switching
-- `power-saver` — battery priority
+Key asusctl commands:
+```bash
+asusctl profile --list          # list available profiles
+asusctl profile -P Balanced     # switch to Balanced (Silent / Balanced / Performance)
+asusctl fan-curve -m Balanced   # view fan curve for a profile
+asusctl fan-curve -e true       # enable custom fan curves
+```
+
+The ROG Control Center GUI (`asusctl-rog-gui`, available via yay) provides a graphical interface similar to Armoury Crate / GHelper for adjusting fan curves per profile, viewing temps, and switching modes without the terminal.
+
+Eww bar widget can call `asusctl profile -P <mode>` to switch profiles on click — replaces the `power-profiles-daemon` widget originally planned.
+
+**Note:** `power-profiles-daemon` conflicts with `asusctl` and should not be installed alongside it. Remove it from the software stack if present.
 
 ### Firewall
 
@@ -617,7 +629,7 @@ These require manual attention after base install — they cannot be scripted ge
 | Docker data-root to /home | Low | Edit daemon.json before first use |
 | Brave profiles | Low | Create university profile |
 | Chezmoi dotfiles init | Low | Initialize after configs are working |
-| power-profiles-daemon default | Low | Set to performance by default |
+| asusctl / supergfxctl setup | Low | Enable asusd and supergfxd services, configure fan curves via asusctl or ROG GUI |
 | Bluetooth device pairing | Low | `bluetoothctl` or Blueman GUI |
 | ufw rules | Low | Default deny incoming is sufficient |
 | Hyprlock appearance | Low | Catppuccin themed |
@@ -647,7 +659,21 @@ yay -S onefetch
 onefetch
 ```
 
-Planned integration: auto-run onefetch when `cd`-ing into a git repository via a zsh hook. This gives instant project context every time you enter a project directory.
+Planned integration: auto-run onefetch when `cd`-ing into a git repository via a zsh hook. Add a guard so it only runs on repos below a certain size — large repos with deep histories make onefetch slow and the output noisy. A simple check on object count works:
+
+```bash
+# ~/.zshrc — add to chpwd hook or similar
+function chpwd() {
+    if git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+        local obj_count=$(git count-objects | awk '{print $1}')
+        if [[ $obj_count -lt 10000 ]]; then
+            onefetch
+        fi
+    fi
+}
+```
+
+Adjust the threshold to taste. This keeps onefetch fast and skips it silently on large repos.
 
 ## Keybinding Submaps (Planned)
 
@@ -666,7 +692,6 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 
 | Thing | Reason |
 |---|---|
-| Gitea | Not needed — joining others' repos via GitHub |
 | VPN | Dropped from plan |
 | Office suite | Switching to Windows for document printing |
 | Night light filter | Not needed |
@@ -674,7 +699,7 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 | Virtual machine manager | Docker covers containerization needs |
 | LTS kernel | Standard kernel has better hardware support for this laptop |
 | btrfs | ext4 chosen for performance, simplicity |
-| Waybar | Eww chosen for full widget flexibility |
+| power-profiles-daemon | Conflicts with asusctl — use asusctl for ASUS hardware instead |
 | Paru | yay chosen as AUR helper |
 | Hyprpaper | Swww is a strict superset |
 
@@ -685,7 +710,6 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 - [Arch Installation Guide](https://wiki.archlinux.org/title/Installation_guide)
 - [Hyprland Wiki](https://wiki.hyprland.org)
 - [Hyprland NVIDIA Guide](https://wiki.hyprland.org/Nvidia/)
-- [ASUS TUF FX505 ArchWiki](https://wiki.archlinux.org/title/ASUS_TUF_Gaming_FX505)
 - [Catppuccin Theme](https://github.com/catppuccin)
 - [Eww Widgets](https://github.com/elkowar/eww)
 - [Antigravity IDE](https://antigravity.google)
