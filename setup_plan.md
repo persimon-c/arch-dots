@@ -187,7 +187,7 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia appname
 | Component | Package | Rationale |
 |---|---|---|
 | Compositor | Hyprland | Wayland-native tiling, low RAM, smooth animations, active development |
-| Status bar + widgets | Quickshell | QML-based, very high widget flexibility, native match for meloworld aesthetic — built with it |
+| Status bar + widgets | Eww | More flexible than Waybar — supports custom widgets beyond a status bar using Yuck (Lisp-like) config |
 | Dock | nwg-dock-hyprland | Quick app access for users transitioning from Windows taskbar |
 | App launcher | Rofi-wayland | More powerful and customizable than Wofi |
 | Notifications | Swaync | Notification center panel, more functional than Dunst/Mako for daily use |
@@ -262,33 +262,6 @@ Two separate profiles:
 - **Profile 1** — Personal (GitHub, Discord, Figma, Canva, Claude)
 - **Profile 2** — University (Google Classroom, university accounts)
 
-### Flatpak
-
-Flatpak is used for Electron-heavy apps and anything with known Wayland compatibility issues as native AUR builds. This avoids debugging broken screen share or rendering issues at inconvenient times.
-
-**Install Flatpak:**
-```bash
-sudo pacman -S flatpak
-```
-
-**Flatpak-preferred apps:**
-
-| App | Reason |
-|---|---|
-| Discord | AUR build has recurring Wayland/screen share issues; Flatpak is more stable |
-| Zoom | Native build lags behind upstream; Flatpak stays current |
-| Spotify | Either works; Flatpak avoids occasional AUR breakage on updates |
-
-Everything else (Brave, OBS, Blender, dev tools) stays native — Flatpak sandbox overhead isn't worth it for tools you control.
-
-**Wayland flags for Flatpak Electron apps:**
-```bash
-# Run once per app via Flatseal, or set globally in /etc/environment
-ELECTRON_OZONE_PLATFORM_HINT=auto
-```
-
----
-
 ### Fonts
 
 | Font | Package | Purpose |
@@ -296,46 +269,6 @@ ELECTRON_OZONE_PLATFORM_HINT=auto
 | JetBrains Mono Nerd Font | ttf-jetbrains-mono-nerd | Primary coding font, includes icons for terminal/bar/Neovim |
 | Noto Fonts Emoji | noto-fonts-emoji | Emoji rendering |
 | Noto Fonts CJK | noto-fonts-cjk | Japanese kaomoji and CJK character support |
-
-### Font Rendering
-
-Arch's default font rendering is noticeably worse than Windows — fonts look slightly blurry or uneven without configuration. Fix this post-install:
-
-```bash
-sudo pacman -S freetype2 fontconfig
-```
-
-Create `/etc/fonts/local.conf`:
-```xml
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <!-- Enable subpixel rendering (RGB layout for most monitors) -->
-  <match target="font">
-    <edit name="rgba" mode="assign"><const>rgb</const></edit>
-  </match>
-
-  <!-- Enable hinting -->
-  <match target="font">
-    <edit name="hinting" mode="assign"><bool>true</bool></edit>
-    <edit name="hintstyle" mode="assign"><const>hintslight</const></edit>
-  </match>
-
-  <!-- Enable antialiasing -->
-  <match target="font">
-    <edit name="antialias" mode="assign"><bool>true</bool></edit>
-  </match>
-</fontconfig>
-```
-
-Then rebuild the font cache:
-```bash
-fc-cache -fv
-```
-
-Log out and back in for changes to take effect. If text still looks off in specific apps, check whether the app respects fontconfig (most GTK/Qt apps do; Electron apps may need additional flags).
-
-This config is tracked in Chezmoi as a system file.
 
 ### Audio
 
@@ -372,7 +305,7 @@ asusctl fan-curve -e true       # enable custom fan curves
 
 The ROG Control Center GUI (`asusctl-rog-gui`, available via yay) provides a graphical interface similar to Armoury Crate / GHelper for adjusting fan curves per profile, viewing temps, and switching modes without the terminal.
 
-Quickshell bar widget can call `asusctl profile -P <mode>` via a `Process` component to switch profiles on click — replaces the `power-profiles-daemon` widget originally planned.
+Eww bar widget can call `asusctl profile -P <mode>` to switch profiles on click — replaces the `power-profiles-daemon` widget originally planned.
 
 **Note:** `power-profiles-daemon` conflicts with `asusctl` and should not be installed alongside it. Remove it from the software stack if present.
 
@@ -409,11 +342,11 @@ HandleLidSwitch=lock
 
 ---
 
-## Quickshell Bar Layout
+## Eww Bar Layout
 
 > **Note:** The exact bar layout will be designed post-install. The following is the current direction, not a final specification.
 
-**Design inspiration:** The meloworld-dotfiles aesthetic — minimal top bar, click-to-reveal panels, glassmorphism styling. Quickshell is the tool meloworld was built with, so the reference dotfiles serve as a direct implementation reference.
+**Design inspiration:** The knight armor desktop aesthetic (Image 2/3 references) — minimal top bar, click-to-reveal panels, glassmorphism styling.
 
 **Confirmed bar elements:**
 
@@ -431,14 +364,14 @@ RIGHT:  [power mode]  [battery %]  [volume]  [network]  [bluetooth]  [tray]  [cl
 - Calendar in bar — undecided, revisit post-install
 
 **Stats panel (click-to-reveal):**
-System stats are hidden by default and revealed on demand via a clickable button in the bar. The panel shows:
+System stats are hidden by default and revealed on demand via a clickable button in the bar (similar to clicking the Arch logo in reference images). The panel shows:
 - CPU usage + temperature
 - RAM usage
 - GPU usage
 - Storage (root and home usage)
 - Network speed
 
-Implemented as a Quickshell popup component triggered by a bar button click. Shell commands for system data are called via `Quickshell.shell` or `Process`; output is bound to QML properties.
+Implemented as an Eww popup widget triggered by a bar button click.
 
 **Music player popup:**
 Clicking the now-playing widget in the center of the bar opens a full Spotify player popup with album art, progress bar, and playback controls. Powered by `playerctl`.
@@ -446,8 +379,6 @@ Clicking the now-playing widget in the center of the bar opens a full Spotify pl
 ```bash
 sudo pacman -S playerctl
 ```
-
-Quickshell reads playerctl output via a `Process` component and exposes it to the QML UI. The meloworld dotfiles include a working reference implementation of this pattern.
 
 **Taskbar (active windows):**
 `nwg-dock-hyprland` configured to show currently open windows only, autohides until hovered. Appears at the bottom of the screen. Replaces the need for a persistent taskbar while keeping Windows-like app visibility on demand.
@@ -572,7 +503,7 @@ Applied consistently across:
 - Hyprland borders and animations
 - Kitty terminal
 - Rofi launcher
-- Quickshell bar
+- Quickshell/Eww bar
 - Zathura PDF viewer
 - SDDM theme
 - Sublime Text
@@ -603,19 +534,19 @@ decoration {
 
 Works best with anime landscape wallpapers where background color bleeds through frosted windows.
 
-### Bar & Widget Tool — Quickshell
+### Bar & Widget Tool — Eww vs Quickshell
 
-**Quickshell** (QML-based) is the chosen tool for the bar and all desktop widgets. It is what the meloworld dotfiles were built with, making those dotfiles a direct reference implementation for the target aesthetic.
+The meloworld aesthetic (primary inspiration for bar/widgets) was built using **Quickshell** (QML-based). Quickshell is newer, actively developed, and produces the exact widget style desired.
 
-- Config language: QML (declarative, similar to JS)
-- Very high widget flexibility
-- `Process` and `Quickshell.shell` for reading system data (playerctl, asusctl, etc.)
-- Fewer community resources than Eww, but the meloworld dotfiles cover the exact patterns needed
+| | Eww | Quickshell |
+|---|---|---|
+| Config language | Yuck (Lisp-like) | QML (declarative, similar to JS) |
+| Widget flexibility | High | Very high |
+| Community resources | More | Less but growing |
+| meloworld aesthetic | Achievable | Native — built with it |
+| Learning curve | Steep | Moderate for devs |
 
-Install via yay:
-```bash
-yay -S quickshell-git
-```
+**Decision:** To be finalized post-install. Quickshell is worth evaluating given the direct aesthetic match. The meloworld dotfiles serve as a reference implementation regardless of which tool is chosen.
 
 ### Wallpaper Direction
 
@@ -681,111 +612,6 @@ Both steps are done **after** base Arch install and first successful boot, befor
 
 ---
 
-## Pacman Hooks (System Event Notifications)
-
-Certain system updates require manual follow-up that's easy to forget. Pacman hooks automate reminders or actions when specific packages are updated.
-
-### Hook: Remind to re-sign after GRUB or kernel update
-
-When GRUB or the kernel is updated, the sbctl signatures become stale — Secure Boot will fail on next boot unless you re-sign. A pacman hook prints a reminder automatically.
-
-```ini
-# /etc/pacman.d/hooks/sbctl-sign-reminder.hook
-[Trigger]
-Operation = Upgrade
-Type = Package
-Target = grub
-Target = linux
-
-[Action]
-Description = Reminder: re-sign GRUB and kernel with sbctl
-When = PostTransaction
-Exec = /usr/bin/echo "ACTION REQUIRED: Run 'sudo sbctl sign-s /efi/EFI/GRUB/grubx64.efi && sudo sbctl sign -s /boot/vmlinuz-linux' to maintain Secure Boot"
-```
-
-Or automate the signing entirely:
-```ini
-[Action]
-Description = Re-signing bootloader and kernel with sbctl
-When = PostTransaction
-Exec = /bin/sh -c 'sbctl sign -s /efi/EFI/GRUB/grubx64.efi && sbctl sign -s /boot/vmlinuz-linux'
-```
-
-### Hook: Remind to copy GRUB fallback after GRUB update
-
-```ini
-# /etc/pacman.d/hooks/grub-fallback.hook
-[Trigger]
-Operation = Upgrade
-Type = Package
-Target = grub
-
-[Action]
-Description = Copying GRUB to UEFI fallback path
-When = PostTransaction
-Exec = /bin/cp /efi/EFI/GRUB/grubx64.efi /efi/EFI/Boot/bootx64.efi
-```
-
-This one can be automated without risk — it's just a file copy.
-
-Both hook files are tracked in Chezmoi as system files.
-
----
-
-## Hyprland Config Structure
-
-Hyprland config lives in `~/.config/hypr/`. Rather than one large `hyprland.conf`, it's split into focused files sourced from the main config. This keeps things navigable and makes it easy to share or version-control individual pieces.
-
-### File Structure
-
-```
-~/.config/hypr/
-├── hyprland.conf         # Entry point — sources everything else
-├── env.conf              # Environment variables (GPU path, Wayland flags, etc.)
-├── monitor.conf          # Monitor layout and resolution
-├── input.conf            # Keyboard, touchpad, sensitivity settings
-├── keybinds.conf         # All bind = lines
-├── windowrules.conf      # Window rules and workspace assignments
-├── animations.conf       # Animation curves and speeds
-├── decoration.conf       # Blur, rounding, shadows, opacity
-├── layout.conf           # Tiling layout settings (gaps, border sizes)
-└── autostart.conf        # exec-once lines (Quickshell, swww, hypridle, etc.)
-```
-
-### hyprland.conf (entry point)
-
-```ini
-# ~/.config/hypr/hyprland.conf
-source = ~/.config/hypr/env.conf
-source = ~/.config/hypr/monitor.conf
-source = ~/.config/hypr/input.conf
-source = ~/.config/hypr/decoration.conf
-source = ~/.config/hypr/animations.conf
-source = ~/.config/hypr/layout.conf
-source = ~/.config/hypr/windowrules.conf
-source = ~/.config/hypr/keybinds.conf
-source = ~/.config/hypr/autostart.conf
-```
-
-### Rationale
-
-- **env.conf separate** — GPU path, `LIBVA_DRIVER_NAME`, and Wayland flags are hardware-specific. Keeping them isolated makes it easy to diff or override per machine if Chezmoi templates are used later.
-- **keybinds.conf separate** — already has a standalone `keybinds.md` in the repo; the config file mirrors that document.
-- **autostart.conf separate** — exec-once lines change often during ricing; isolation reduces noise in git diffs.
-- **decoration + animations separate** — these are the most frequently tweaked during ricing. Isolation keeps the iteration loop tight.
-
-All files tracked in Chezmoi and mirrored in the `hypr/` folder of the dotfiles repo.
-
----
-
-## Package List & System Reproducibility
-
-A maintained package list means a full reinstall or new machine setup takes minutes instead of days. The strategy is simple: export the explicit package list regularly and keep it in the dotfiles repo.
-
-**This will be set up after the install is complete and the full software stack is stable.** The plan will be documented at that point, including the export command, Chezmoi integration, and AUR vs official package handling.
-
----
-
 ## Post-Install Manual Configuration Steps
 
 These require manual attention after base install — they cannot be scripted generically:
@@ -793,12 +619,10 @@ These require manual attention after base install — they cannot be scripted ge
 | Step | Complexity | Notes |
 |---|---|---|
 | NVIDIA + AMD hybrid GPU config | High | Most critical, black screen risk if wrong |
-| Hyprland config (keybinds, rules, animations) | High | Core of the desktop experience — split file structure per Hyprland Config Structure section |
-| Quickshell bar layout (QML) | Medium | QML is declarative and JS-like; meloworld dotfiles are a direct reference |
+| Hyprland config (keybinds, rules, animations) | High | Core of the desktop experience |
+| Eww bar layout (Yuck syntax) | Medium | Requires learning Yuck config language |
 | SDDM pixel art theme | Medium | Source theme from GitHub, configure |
 | Secure Boot signing (sbctl) | Medium | Do after first successful boot |
-| Font rendering (fontconfig) | Low | `/etc/fonts/local.conf` — subpixel + hinting |
-| Pacman hooks (sbctl + GRUB fallback) | Low | Set up after Secure Boot signing is confirmed working |
 | GRUB fallback path | Low | One command, run after GRUB install |
 | zsh + Zinit plugins | Low | Autosuggestions, syntax highlighting, fzf |
 | SSH key generation | Low | `ssh-keygen -t ed25519` |
@@ -810,7 +634,6 @@ These require manual attention after base install — they cannot be scripted ge
 | ufw rules | Low | Default deny incoming is sufficient |
 | Hyprlock appearance | Low | Catppuccin themed |
 | Hypridle timeouts | Low | 5min lock, 10min display off |
-| Flatpak + Flatseal setup | Low | Install Discord, Zoom, Spotify via Flatpak; set Wayland flags via Flatseal |
 
 ---
 
@@ -824,7 +647,7 @@ A persistent desktop widget showing Git/repo information is planned post-install
 - Last commit per repo
 - Open pull requests
 
-Implementation via Quickshell widgets using `Process` components to pull from GitHub API or local git commands. This will be designed after the base environment is stable.
+Implementation via Eww widgets pulling from GitHub API or local git commands. This will be designed after the base environment is stable.
 
 ### Onefetch — Terminal Repo Info
 
@@ -879,7 +702,6 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 | power-profiles-daemon | Conflicts with asusctl — use asusctl for ASUS hardware instead |
 | Paru | yay chosen as AUR helper |
 | Hyprpaper | Swww is a strict superset |
-| Eww | Quickshell chosen — native match for meloworld aesthetic, QML is more familiar than Yuck |
 
 ---
 
@@ -889,7 +711,7 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 - [Hyprland Wiki](https://wiki.hyprland.org)
 - [Hyprland NVIDIA Guide](https://wiki.hyprland.org/Nvidia/)
 - [Catppuccin Theme](https://github.com/catppuccin)
-- [Quickshell](https://quickshell.outfoxxed.me)
+- [Eww Widgets](https://github.com/elkowar/eww)
 - [Antigravity IDE](https://antigravity.google)
 - [Onefetch](https://github.com/o2sh/onefetch)
 - [nwg-dock-hyprland](https://github.com/nwg-piotr/nwg-dock-hyprland)
