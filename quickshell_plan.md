@@ -66,11 +66,11 @@ Each item is its own pill, separated. Left to right:
 
 | Pill | Default display | On click |
 |---|---|---|
-| Battery | Percentage + charging icon | — |
-| Network | Wi-Fi icon + SSID truncated | — |
-| Bluetooth | Icon only | — |
-| Volume | Icon only | Slider appears inline; icon click = mute toggle |
-| Clock | Time (prominent) + date (smaller) | — |
+| Battery | Percentage + charging icon | Dropdown to select performance profile: Silent / Balanced / Performance (via asusctl) — synced with left sidebar quick settings |
+| Network | Wi-Fi icon + SSID truncated | Dropdown listing available Wi-Fi networks — connect/disconnect |
+| Bluetooth | Icon only | Dropdown listing paired devices — connect/disconnect toggle per device |
+| Volume | Icon only | Slider appears inline; icon itself = mute toggle |
+| Clock | Time (prominent) + date (smaller) | Dropdown showing current month calendar |
 | Notification bell | Bell icon + unread count badge | Toggles Swaync panel |
 | Power button | Icon | Small popup: lock, suspend, reboot, shutdown |
 
