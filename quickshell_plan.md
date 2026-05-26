@@ -35,7 +35,8 @@ Three elements in a row, left to right:
 - Shows icons of all open apps on the currently active workspace
 - Updates when workspace changes or a window opens/closes
 - Sourced via Hyprland IPC (`hyprctl clients -j`)
-- Icons pulled from the app's desktop entry
+- Icons sourced from `.desktop` files in `/usr/share/applications/`
+- Clicking an app icon focuses that window and brings it to the top via Hyprland IPC (`hyprctl dispatch focuswindow`)
 
 ### Center — Cava + Media Player
 
@@ -48,6 +49,7 @@ Three elements in a row, left to right:
 - Shows commit count for the current week (e.g. "7 commits this week")
 - Sourced from GitHub API — same token used by the right sidebar
 - Falls back to "—" if API is unavailable or token is not set
+- Click opens the right sidebar Git/Repo panel
 
 **On click (when something is playing):**
 - Expands downward as a dropdown anchored to the center pill
@@ -67,10 +69,10 @@ Each item is its own pill, separated. Left to right:
 | Pill | Default display | On click |
 |---|---|---|
 | Battery | Percentage + charging icon | Dropdown to select performance profile: Silent / Balanced / Performance (via asusctl) — synced with left sidebar quick settings |
-| Network | Wi-Fi icon + SSID truncated | Dropdown listing available Wi-Fi networks — connect/disconnect |
-| Bluetooth | Icon only | Dropdown listing paired devices — connect/disconnect toggle per device |
+| Network | Wi-Fi icon + SSID truncated | Dropdown listing available Wi-Fi networks — connect/disconnect; connecting to a password-protected network opens a separate password prompt dialog |
+| Bluetooth | Icon only | Dropdown listing paired devices — connect/disconnect toggle per device; includes a "Scan for new devices" button at the bottom of the list |
 | Volume | Icon only | Slider appears inline; icon itself = mute toggle |
-| Clock | Time (prominent) + date (smaller) | Dropdown showing current month calendar |
+| Clock | Time (prominent) + date (smaller) | Dropdown showing current month calendar — static view only, current date highlighted with an indicator |
 | Notification bell | Bell icon + unread count badge | Toggles Swaync panel |
 | Power button | Icon | Small popup: lock, suspend, reboot, shutdown |
 
@@ -87,7 +89,7 @@ All data is fetched **on panel open only** — nothing polls while the panel is 
 ### Section 1 — Profile
 
 - Username (`simone`) + hostname (`persmon`)
-- Short tagline or quote (static, set manually in config)
+- Quote: "the moon is beautiful, isn't it?" — hardcoded in QML, not configurable
 - Uptime
 
 ### Section 2 — System Stats
@@ -123,7 +125,7 @@ At the bottom of the panel.
 
 ## Right Sidebar — Git / Repo Widget
 
-Standalone panel on the right side of the screen. Separate from the left sidebar — toggled independently via a keybind (to be decided post-install).
+Standalone panel on the right side of the screen. Width is 25% of the screen (1/4 of 1920px = ~480px) — never exceeds this. Separate from the left sidebar — toggled independently via a keybind (to be decided post-install).
 
 Glassmorphism card style, same aesthetic as left sidebar.
 
@@ -151,7 +153,7 @@ Each repo is displayed as a card showing:
 - Repo name
 - Current branch
 - Last commit message + relative time (e.g. "2 hours ago")
-- Dirty status indicator — dot or icon if there are uncommitted changes
+- Dirty status indicator — a colored dot if there are uncommitted changes
 
 **Quick action buttons per repo card:**
 
