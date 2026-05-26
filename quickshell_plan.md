@@ -159,12 +159,12 @@ Each repo is displayed as a card showing:
 |---|---|
 | Folder icon | Opens Thunar to the repo directory |
 | GitHub icon | Opens the GitHub repo URL in Brave |
-| Editor icon | Opens the repo in the configured editor (Zed or Neovim — decide post-install) |
+| Editor icon | Opens the repo in Antigravity |
 
 Implemented as `Process` calls in QML:
 - Thunar: `thunar /path/to/repo`
 - GitHub: `xdg-open https://github.com/username/reponame`
-- Editor: `zed /path/to/repo` or `nvim /path/to/repo`
+- Editor: `antigravity /path/to/repo`
 
 **Refresh button** at the top of the panel re-runs all data fetches (git log, dirty check, heatmap API call).
 
@@ -202,7 +202,6 @@ These are managed by other tools per the main setup plan:
 | Decision | Notes |
 |---|---|
 | Right sidebar keybind | Pick after base keybinds are settled |
-| Editor for repo quick-open | Zed or Neovim — decide after editor setup |
 | Cava bar color | Static Catppuccin accent or reactive to album art |
 | Repo root directory | Recommended: `~/dev` — confirm on first boot |
 | GitHub username | Configure in widget secrets/config file |
