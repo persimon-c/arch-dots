@@ -519,7 +519,7 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
 
 yay -S sddm-git hyprlock hypridle swww rofi-wayland swaync \
        nwg-dock-hyprland hyprshot cliphist wl-clipboard \
-       kitty zellij yazi thunar
+       kitty zellij yazi thunar quickshell-git
 ```
 
 **Enable services:**
