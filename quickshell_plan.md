@@ -245,26 +245,34 @@ asusctl --version
 
 ### Step 2 — Fetch the Current Quickshell Docs
 
-Quickshell's API changes between versions. Always pull the current docs before coding.
+Quickshell's API changes between versions. Always pull the current docs before coding. You don't need the entire docs site — just the specific component pages for what you're building that session.
 
-**Option A — from the website:**
-Go to https://quickshell.outfoxxed.me and navigate to the API reference. Copy the relevant component docs for whatever you are building that session (e.g. `PanelWindow`, `Process`, `ShellRoot`, `Hyprland`, `PipewireNode`).
+**Where to get them:**
+Go to https://quickshell.outfoxxed.me/docs/types, Ctrl+F the component name, and copy that component's page into the Claude session. 2-3 component pages per session is usually enough.
 
-**Option B — from your installed files:**
+**Components needed in almost every session (always paste these):**
+- `ShellRoot` — the entry point for every Quickshell config
+- `PanelWindow` — how bars and floating panels are created
+- `Process` — how shell commands are run (nmcli, asusctl, hyprctl, cava, etc.)
+
+**Additional components per widget (paste only when building that widget):**
+
+| Widget | Extra components to paste |
+|---|---|
+| Workspace indicator, App icons | `Hyprland` module |
+| Volume pill | `PipewireNode`, `PipewireDevice` |
+| Media player dropdown | `MprisPlayer` (if Quickshell has a built-in; otherwise Process + playerctl) |
+| Network, Bluetooth, Battery, asusctl | Just `Process` — these are all subprocess calls |
+| Idle inhibitor | `WaylandIdleInhibitor` |
+| Sidebar open/close keybind | `GlobalShortcut` or `ShortcutHandler` |
+
+**If you are unsure what to paste:** tell Claude what you are building at the start of the session and ask "which Quickshell components will I need for this?" — Claude will list them and you can look them up before proceeding.
+
+**Locally installed docs (may or may not exist depending on version):**
 ```bash
-# Quickshell may ship QML type documentation locally
 find /usr/share/quickshell -name "*.md" 2>/dev/null
 find /usr/share/doc/quickshell -type f 2>/dev/null
 ```
-
-**Option C — from the changelog:**
-```bash
-# If installed via yay, the changelog may be in the package cache
-cat /var/cache/pacman/pkg/quickshell-*.zst 2>/dev/null
-# Or check the AUR page for the version and read the GitHub release notes
-```
-
-Paste whichever you find into the Claude session at the start.
 
 ---
 
@@ -289,7 +297,7 @@ My setup:
 Relevant installed tools: playerctl, nmcli, asusctl, supergfxctl, cava, radeontop
 
 Current Quickshell API docs (paste relevant sections here):
-[paste from quickshell.outfoxxed.me]
+[paste from quickshell.outfoxxed.me — if unsure which components to paste, ask Claude first: "which Quickshell components will I need to build [widget name]?" then look them up and paste before proceeding]
 
 Here is my full widget plan for context:
 [paste this entire quickshell_plan.md]
