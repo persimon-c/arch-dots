@@ -310,8 +310,8 @@ pacman -S grub efibootmgr os-prober ntfs-3g networkmanager sudo git zsh curl
 ## Step 14 — Create Your User
 
 ```bash
-useradd -m -G wheel -s /bin/zsh simone
-passwd simone
+useradd -m -G wheel -s /bin/zsh persmon
+passwd persmon
 ```
 
 **Enable sudo for the wheel group:**
@@ -433,7 +433,7 @@ Remove the USB when the screen goes dark.
 
 GRUB should appear. Select Arch Linux.
 
-Log in as `simone` with the password you set.
+Log in as `persmon` with the password you set.
 
 **Verify internet:**
 ```bash
@@ -485,7 +485,7 @@ reboot
 > **Error — black screen after NVIDIA driver install:**  
 > This is the most common hardware-specific issue on the FX505DT. Recovery steps:  
 > 1. At boot, switch to a TTY: `Ctrl+Alt+F2` (try F2 through F6)  
-> 2. Log in as root or simone  
+> 2. Log in as root or persmon  
 > 3. Check what failed: `journalctl -b -p err`  
 > 4. Check if NVIDIA module loaded: `lsmod | grep nvidia`  
 >  
