@@ -175,11 +175,11 @@ Implemented as `Process` calls in QML:
 ## Implementation Notes
 
 - **App icons in top bar:** sourced via `hyprctl clients -j` on workspace change; icon looked up from `.desktop` files in `/usr/share/applications/`
-- **Cava integration:** run cava as a subprocess, parse stdout bar values, render as QML rectangles
-- **Circular gauges:** custom QML Canvas components — no library dependency; values read from `/proc/stat` (CPU), `/proc/meminfo` (RAM), `nvidia-smi` or `radeontop` (GPU)
+- **Cava integration:** run cava as a subprocess, parse stdout bar values, render as QML rectangles; requires `output_method = raw` or `output_method = csv` in `~/.config/cava/config` for machine-readable output
+- **Circular gauges:** custom QML Canvas components — no library dependency; values read from `/proc/stat` (CPU), `/proc/meminfo` (RAM), `nvidia-smi` or `radeontop` (GPU); note: `radeontop` requires root by default — fix with a udev rule granting your user read access to the GPU device, otherwise the Process call will silently fail
 - **Storage bars:** read from `df -h` via `Process` or directly from `/proc/mounts` + `statvfs`
 - **Repo scanning:** `Process { command: ["find", repoRoot, "-maxdepth", "2", "-name", ".git", "-type", "d"] }` then strip `/.git` suffix from each result
-- **GitHub API:** fetch `https://api.github.com/users/<username>/contributions` or use the GraphQL contributions API for heatmap data
+- **GitHub API:** use the GraphQL API (`https://api.github.com/graphql`) with the `contributionsCollection` query for heatmap data — the REST endpoint `api.github.com/users/<username>/contributions` is undocumented and unreliable; GraphQL requires a personal access token but is stable and returns exactly the contribution data needed
 - **Wi-Fi pill:** driven entirely by `nmcli` via `Process` calls — no `wifi-menu`, `dialog`, or `network-manager-applet` needed. List networks: `nmcli -t -f SSID,SIGNAL,SECURITY device wifi list`; connect: `nmcli device wifi connect "SSID" password "pw"`; disconnect: `nmcli device disconnect wlan0`. Password prompt is a QML text input field that feeds into the connect command.
 - **Sidebar open/close:** `visible` binding toggled by a `ShortcutHandler` (right sidebar) or mouse click (left sidebar); panel anchored via Quickshell `Anchor` or `PanelWindow`
 - **Performance:** no timers or polling anywhere — all data fetched on open or on manual refresh only
@@ -208,3 +208,194 @@ These are managed by other tools per the main setup plan:
 | Cava bar color | Static Catppuccin accent or reactive to album art |
 | Repo root directory | Recommended: `~/dev` — confirm on first boot |
 | GitHub username | Configure in widget secrets/config file |
+
+---
+
+## QML Coding Guide (For Fresh Installation)
+
+This section exists because Claude's knowledge of Quickshell may be outdated by the time you start building. Follow this guide at the start of every coding session to make sure Claude is working from your actual installed version, not stale training data.
+
+---
+
+### Step 1 — Gather Your Installed Version Info
+
+Before opening a Claude session, run these commands and keep the output ready to paste:
+
+```bash
+# Quickshell version
+quickshell --version
+
+# Qt version (Quickshell is built on Qt/QML)
+qml --version
+
+# Confirm Hyprland version (affects IPC behavior)
+hyprctl version
+
+# Confirm playerctl is installed and working
+playerctl --version
+
+# Confirm nmcli is available
+nmcli --version
+
+# Confirm asusctl is available
+asusctl --version
+```
+
+---
+
+### Step 2 — Fetch the Current Quickshell Docs
+
+Quickshell's API changes between versions. Always pull the current docs before coding.
+
+**Option A — from the website:**
+Go to https://quickshell.outfoxxed.me and navigate to the API reference. Copy the relevant component docs for whatever you are building that session (e.g. `PanelWindow`, `Process`, `ShellRoot`, `Hyprland`, `PipewireNode`).
+
+**Option B — from your installed files:**
+```bash
+# Quickshell may ship QML type documentation locally
+find /usr/share/quickshell -name "*.md" 2>/dev/null
+find /usr/share/doc/quickshell -type f 2>/dev/null
+```
+
+**Option C — from the changelog:**
+```bash
+# If installed via yay, the changelog may be in the package cache
+cat /var/cache/pacman/pkg/quickshell-*.zst 2>/dev/null
+# Or check the AUR page for the version and read the GitHub release notes
+```
+
+Paste whichever you find into the Claude session at the start.
+
+---
+
+### Step 3 — How to Start a Claude Coding Session
+
+Open every Quickshell coding session with this block of context. Fill in the blanks at install time:
+
+```
+I am building a Quickshell widget bar on Arch Linux with Hyprland.
+
+Versions:
+- Quickshell: [paste output of quickshell --version]
+- Qt: [paste output of qml --version]
+- Hyprland: [paste output of hyprctl version]
+
+My setup:
+- GPU: AMD iGPU (primary) + NVIDIA GTX 1650 (PRIME offload)
+- Display: 1920x1080, single monitor
+- Shell: zsh
+- Username: simone, Hostname: persmon
+
+Relevant installed tools: playerctl, nmcli, asusctl, supergfxctl, cava, radeontop
+
+Current Quickshell API docs (paste relevant sections here):
+[paste from quickshell.outfoxxed.me]
+
+Here is my full widget plan for context:
+[paste this entire quickshell_plan.md]
+
+What I want to build this session:
+[describe the specific widget or component]
+```
+
+This gives Claude everything it needs to write accurate, version-appropriate QML without guessing.
+
+---
+
+### Step 4 — Build Order (Recommended)
+
+Build in this order. Each step depends on the previous one being stable.
+
+1. **ShellRoot + PanelWindow scaffold** — get a blank bar rendering on screen before adding any content
+2. **Catppuccin color constants** — define all colors in one QML file so everything references the same values
+3. **Pill component** — a reusable rounded glassmorphism capsule; everything else is built inside this
+4. **Clock pill** — simplest pill, no external data, good for validating the pill component
+5. **Workspace indicator** — first Hyprland IPC integration; validates that `Hyprland` module works on your version
+6. **Volume pill** — first Pipewire integration; validates audio stack
+7. **Network pill** — first `nmcli` Process call; validates subprocess pattern
+8. **Battery pill + performance profile dropdown** — first `asusctl` integration
+9. **Bluetooth pill** — builds on the dropdown pattern from battery pill
+10. **App icons pill** — more complex IPC; builds on workspace indicator
+11. **Cava pill** — subprocess with continuous stdout parsing; most complex top bar component
+12. **Media player dropdown** — MPRIS via playerctl; builds on Cava subprocess pattern
+13. **Left sidebar** — builds on all pill patterns; add sections one at a time
+14. **Right sidebar** — GitHub GraphQL API call is the most complex part; build repo list first, heatmap second
+
+---
+
+### Step 5 — Debugging Tips
+
+**If a Process call silently does nothing:**
+- Test the command manually in terminal first
+- Check if the command needs to be in `$PATH` — Quickshell may have a different environment than your shell
+- Try using the full binary path (e.g. `/usr/bin/nmcli` instead of `nmcli`)
+
+**If a panel doesn't appear:**
+- Run `quickshell` from terminal to see runtime errors — they don't always show in logs
+- Check `journalctl --user -u quickshell` for service errors
+
+**If Hyprland IPC calls fail:**
+- Verify `$HYPRLAND_INSTANCE_SIGNATURE` is set in the Quickshell environment
+- Test with `hyprctl clients -j` in terminal first to confirm the output format matches what your QML parser expects
+
+**If radeontop fails silently:**
+- See Implementation Notes — needs a udev rule for non-root access
+- Temporary workaround while testing: prefix with `sudo` to confirm the command itself works, then fix permissions properly
+
+**If the GitHub GraphQL call returns nothing:**
+- Check that the token in `~/.config/quickshell/secrets.env` is exported correctly
+- Test the query with `curl` in terminal first:
+```bash
+curl -H "Authorization: bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"query": "{ viewer { contributionsCollection { contributionCalendar { weeks { contributionDays { contributionCount date } } } } } }"}' \
+     https://api.github.com/graphql
+```
+
+---
+
+### Step 6 — File Structure to Use
+
+```
+~/.config/quickshell/
+├── shell.qml               # ShellRoot entry point — sources everything
+├── colors.qml              # Catppuccin Mocha color constants
+├── bar/
+│   ├── Bar.qml             # Top bar PanelWindow
+│   ├── PillBase.qml        # Reusable pill/capsule component
+│   ├── WorkspacePill.qml
+│   ├── AppIconsPill.qml
+│   ├── CavaPill.qml
+│   ├── MediaDropdown.qml
+│   ├── ClockPill.qml
+│   ├── VolumePill.qml
+│   ├── NetworkPill.qml
+│   ├── BluetoothPill.qml
+│   ├── BatteryPill.qml
+│   └── PowerPill.qml
+├── sidebar-left/
+│   ├── LeftSidebar.qml
+│   ├── ProfileCard.qml
+│   ├── StatsCard.qml
+│   ├── QuickSettingsCard.qml
+│   └── PowerCard.qml
+├── sidebar-right/
+│   ├── RightSidebar.qml
+│   ├── ContributionHeatmap.qml
+│   └── RepoCard.qml
+└── secrets.env             # GitHub token — never commit this
+```
+
+Keep `secrets.env` in `.gitignore` if the config is tracked in a git repo (Chezmoi will handle this — add it to the ignore list there too).
+
+---
+
+### Step 7 — Chezmoi Integration Note
+
+Once the Quickshell config is stable, add it to Chezmoi like all other dotfiles. The one exception is `secrets.env` — mark it as ignored in `~/.config/chezmoi/chezmoiignore`:
+
+```
+.config/quickshell/secrets.env
+```
+
+The token itself should be stored separately (e.g. in a password manager) and re-entered manually on a new machine setup.
