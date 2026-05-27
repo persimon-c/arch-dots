@@ -180,6 +180,7 @@ Implemented as `Process` calls in QML:
 - **Storage bars:** read from `df -h` via `Process` or directly from `/proc/mounts` + `statvfs`
 - **Repo scanning:** `Process { command: ["find", repoRoot, "-maxdepth", "2", "-name", ".git", "-type", "d"] }` then strip `/.git` suffix from each result
 - **GitHub API:** fetch `https://api.github.com/users/<username>/contributions` or use the GraphQL contributions API for heatmap data
+- **Wi-Fi pill:** driven entirely by `nmcli` via `Process` calls — no `wifi-menu`, `dialog`, or `network-manager-applet` needed. List networks: `nmcli -t -f SSID,SIGNAL,SECURITY device wifi list`; connect: `nmcli device wifi connect "SSID" password "pw"`; disconnect: `nmcli device disconnect wlan0`. Password prompt is a QML text input field that feeds into the connect command.
 - **Sidebar open/close:** `visible` binding toggled by a `ShortcutHandler` (right sidebar) or mouse click (left sidebar); panel anchored via Quickshell `Anchor` or `PanelWindow`
 - **Performance:** no timers or polling anywhere — all data fetched on open or on manual refresh only
 
