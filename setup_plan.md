@@ -192,6 +192,8 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia appname
 | App launcher | Rofi-wayland | More powerful and customizable than Wofi |
 | Notifications | Swaync | Notification center panel, more functional than Dunst/Mako for daily use |
 | Wallpaper | Swww | Supports animated wallpapers and smooth transitions, superset of Hyprpaper |
+| Dynamic theming | matugen | Generates Material You accent palette from wallpaper; blended with Catppuccin Mocha base for dynamic theming |
+| Wallpaper thumbnails | tumbler | Generates XDG-spec thumbnails for Rofi wallpaper picker |
 | Screen locker | Hyprlock | Made by the Hyprland developer, native integration |
 | Idle manager | Hypridle | Companion to Hyprlock, handles auto-lock and display timeout |
 | Portals | xdg-desktop-portal-hyprland + xdg-desktop-portal-gtk | Required for file picker dialogs and drag-and-drop into browser |
@@ -808,9 +810,11 @@ These require manual attention after base install — they cannot be scripted ge
 | asusctl / supergfxctl setup | Low | Enable asusd and supergfxd services, configure fan curves via asusctl or ROG GUI |
 | Bluetooth device pairing | Low | `bluetoothctl` or Blueman GUI |
 | ufw rules | Low | Default deny incoming is sufficient |
-| Hyprlock appearance | Low | Catppuccin themed |
+| Hyprlock appearance | Low | Catppuccin Mocha base + dynamic accent from matugen; background reads from ~/.cache/current_wallpaper |
 | Hypridle timeouts | Low | 5min lock, 10min display off |
 | Flatpak + Flatseal setup | Low | Install Discord, Zoom, Spotify via Flatpak; set Wayland flags via Flatseal |
+| matugen setup | Low | Run once against first wallpaper to generate initial color files; verify ~/.config/matugen/colors.sh exists |
+| Wallpaper switcher script | Low | Write wallpaper-change.sh (swww → matugen → app reloads) and Rofi wallpaper picker script; set keybind |
 
 ---
 
@@ -893,3 +897,4 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 - [Antigravity IDE](https://antigravity.google)
 - [Onefetch](https://github.com/o2sh/onefetch)
 - [nwg-dock-hyprland](https://github.com/nwg-piotr/nwg-dock-hyprland)
+- [matugen](https://github.com/InioX/matugen)
