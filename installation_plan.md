@@ -360,6 +360,14 @@ GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nvidia-drm.modeset=1 ibt=off"
 GRUB_DISABLE_OS_PROBER=false
 ```
 
+**Install fuse3 — required for os-prober to work:**
+
+`grub-mount` (used internally by os-prober to probe partitions) depends on `libfuse3.so.3` at runtime, but `fuse3` is only an optional dependency of `grub` and won't be installed automatically. Without it, `grub-mount` silently fails and os-prober never detects Windows.
+
+```bash
+pacman -S fuse3
+```
+
 **Generate GRUB config:**
 ```bash
 grub-mkconfig -o /boot/grub/grub.cfg
@@ -601,7 +609,57 @@ bind = $mod, L, exec, hyprlock
 
 ---
 
-## Step 27 — Post-Install: Secure Boot Signing (After Everything Works)
+## Step 27 — Storage Management (Keep Root Healthy)
+
+Your root partition is only 50GB. Two things must be done to prevent it from filling up.
+
+**1. Enable automatic pacman cache cleanup:**
+
+The pacman cache lives on root at `/var/cache/pacman/pkg/` and grows unbounded by default. Enable the weekly cleanup timer that ships with pacman:
+
+```bash
+sudo systemctl enable --now paccache.timer
+```
+
+This automatically keeps only the 3 most recent versions of each package and removes the rest, weekly.
+
+**2. Move Docker data root to /home:**
+
+Docker images, containers, and volumes are stored at `/var/lib/docker/` by default — on root. A single image can be 1–3GB and they accumulate fast. Move the data root to your 627GB home partition:
+
+```bash
+sudo mkdir -p /home/docker-data
+```
+
+Create or edit the Docker daemon config:
+```bash
+sudo nano /etc/docker/daemon.json
+```
+
+Add:
+```json
+{
+  "data-root": "/home/docker-data"
+}
+```
+
+Then enable and start Docker:
+```bash
+sudo systemctl enable --now docker
+sudo systemctl restart docker
+```
+
+Verify the data root moved:
+```bash
+docker info | grep "Docker Root Dir"
+# Should show: Docker Root Dir: /home/docker-data
+```
+
+> **Note — do this before pulling any Docker images.** If you pull images before moving the data root, they land on root. Moving after the fact requires migrating existing data manually.
+
+---
+
+## Step 28 — Post-Install: Secure Boot Signing (After Everything Works)
 
 Do this only after confirming Arch boots correctly and all hardware works.
 
@@ -634,7 +692,7 @@ Then re-enable Secure Boot in BIOS. Both Windows and Arch will boot normally.
 | Unplugged battery causes black screen | Screen goes dark when charger removed | Add `iommu=pt` to GRUB kernel parameters |
 | asusd won't start | Fan control unavailable | Check `modinfo asus_wmi`, verify kernel module is present |
 | Nouveau conflicts with NVIDIA | Intermittent crashes or boot failures | Blacklist nouveau + add `nouveau.modeset=0` kernel param |
-| os-prober misses Windows in chroot | Windows not in GRUB menu on first install | Normal — re-run grub-mkconfig after first reboot without USB |
+| os-prober misses Windows in chroot | Windows not in GRUB menu on first install | Normal — re-run grub-mkconfig after first reboot without USB; also verify fuse3 is installed |
 | GRUB overwritten by Windows Update | System boots straight to Windows | GRUB fallback path (Step 16) prevents this |
 
 ---
