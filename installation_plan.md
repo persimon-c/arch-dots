@@ -87,40 +87,45 @@ timedatectl status   # verify it says "NTP service: active"
 
 **Identify your disks first:**
 ```bash
-lsblk
+fdisk -l
 ```
 
 You should see:
 - `nvme0n1` — NVMe SSD (~238GB), contains Windows C:
 - `sda` — HDD (~931GB), contains Windows D:
 
-**Do not use `fdisk` or `cfdisk` on the Windows partitions. Only create new partitions in the unallocated space.**
+**Do not touch the Windows partitions. Only create new partitions in the unallocated space.**
 
 ### Partition the SSD (nvme0n1) — Arch root only
 
 ```bash
-fdisk /dev/nvme0n1
+cfdisk /dev/nvme0n1
 ```
 
-Inside fdisk:
-- Press `p` to print current partitions — verify nvme0n1p1 (EFI), p2 (MSR), p3 (Windows C:) are there
-- Press `n` to create new partition → accept defaults (it will use the unallocated 50GB)
-- Press `w` to write and exit
+Inside cfdisk:
+- You'll see the existing partitions: nvme0n1p1 (EFI), p2 (MSR), p3 (Windows C:), and a `Free space` entry of ~50GB
+- Arrow down to the `Free space` entry
+- Select `[ New ]` → accept the default size (entire free space) → Enter
+- Select `[ Write ]` → type `yes` to confirm
+- Select `[ Quit ]`
 
 This creates `nvme0n1p4`.
 
 ### Partition the HDD (sda) — swap + home
 
 ```bash
-fdisk /dev/sda
+cfdisk /dev/sda
 ```
 
-Inside fdisk:
-- Press `p` — verify sda1 (Windows D:) is there
-- Press `n` → new partition → First sector: default → Last sector: `+4G` → this is swap (sda2)
-- Press `n` → new partition → accept remaining defaults → this is home (sda3)
-- Press `t` → select partition 2 → type `82` (Linux swap)
-- Press `w` to write and exit
+Inside cfdisk:
+- You'll see sda1 (Windows D:) and a `Free space` entry of ~627GB
+- Arrow down to `Free space`
+- Select `[ New ]` → type `4G` → Enter → this is swap (sda2)
+- Arrow down to the remaining `Free space`
+- Select `[ New ]` → accept default size (all remaining space) → Enter → this is home (sda3)
+- Arrow to sda2 → select `[ Type ]` → choose `Linux swap`
+- Select `[ Write ]` → type `yes` to confirm
+- Select `[ Quit ]`
 
 **Verify the result:**
 ```bash
@@ -139,7 +144,7 @@ sda3        ~627GB   (Arch home — new)
 ```
 
 > **Error — partition table shows wrong sizes or overlaps:**  
-> Do not proceed. Type `q` to quit fdisk without writing. Re-examine with `lsblk` and `fdisk -l /dev/nvme0n1`. If unallocated space is missing, Windows Disk Management may not have actually committed the shrink — reboot Windows and check.
+> Select `[ Quit ]` without writing. Re-examine with `lsblk` and `fdisk -l /dev/nvme0n1`. If unallocated space is missing, Windows Disk Management may not have actually committed the shrink — reboot Windows and check.
 
 ---
 
@@ -159,7 +164,7 @@ mkswap /dev/sda2
 ```
 
 > **Error — `mkfs.ext4: invalid argument` or similar:**  
-> Run `lsblk` to confirm the partition actually exists. If it doesn't, the `fdisk` write step may not have committed — rerun fdisk.
+> Run `lsblk` to confirm the partition actually exists. If it doesn't, the cfdisk write step may not have committed — rerun cfdisk and make sure to select `[ Write ]` and confirm with `yes`.
 
 ---
 
