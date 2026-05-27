@@ -204,7 +204,7 @@ reflector --country Philippines --latest 10 --sort rate --save /etc/pacman.d/mir
 
 **Install base packages:**
 ```bash
-pacstrap -K /mnt base base-devel linux linux-headers linux-firmware amd-ucode
+pacstrap -K /mnt base base-devel linux linux-headers linux-firmware amd-ucode sof-firmware vim
 ```
 
 This takes a few minutes. It downloads and installs the core system.
@@ -256,7 +256,7 @@ hwclock --systohc
 **Set locale:**
 ```bash
 # Edit /etc/locale.gen and uncomment: en_US.UTF-8 UTF-8
-nano /etc/locale.gen
+vim /etc/locale.gen
 # Find the line, remove the leading #, save (Ctrl+O, Enter, Ctrl+X)
 
 locale-gen
@@ -273,7 +273,7 @@ echo "persmon" > /etc/hostname
 ```
 
 ```bash
-nano /etc/hosts
+vim /etc/hosts
 ```
 
 Add these lines:
@@ -298,13 +298,12 @@ Set a strong root password. You'll need this to recover from mistakes.
 ## Step 13 — Install Essential Packages
 
 ```bash
-pacman -S grub efi-boot-mgr os-prober ntfs-3g networkmanager network-manager-applet \
-          wireless_tools wpa_supplicant dialog sudo nano git zsh
+pacman -S grub efibootmgr os-prober ntfs-3g networkmanager sudo git zsh
 ```
 
 - `ntfs-3g` — required for os-prober to detect the Windows partition
 - `networkmanager` — handles Wi-Fi and ethernet after reboot
-- `efi-boot-mgr` — required by GRUB for UEFI install
+- `efibootmgr` — required by GRUB for UEFI install
 
 ---
 
@@ -317,7 +316,7 @@ passwd simone
 
 **Enable sudo for the wheel group:**
 ```bash
-EDITOR=nano visudo
+EDITOR=vim visudo
 ```
 
 Find and uncomment this line (remove the `#`):
@@ -333,7 +332,7 @@ This is done now (before installing NVIDIA drivers) since NVIDIA modules must be
 
 **Edit `/etc/mkinitcpio.conf`:**
 ```bash
-nano /etc/mkinitcpio.conf
+vim /etc/mkinitcpio.conf
 ```
 
 Find the `MODULES=()` line and change it to:
@@ -356,7 +355,7 @@ grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
 
 **Enable os-prober in GRUB config:**
 ```bash
-nano /etc/default/grub
+vim /etc/default/grub
 ```
 
 Find and change or add these lines:
@@ -561,7 +560,7 @@ Create the Hyprland config directory and start a minimal config:
 
 ```bash
 mkdir -p ~/.config/hypr
-nano ~/.config/hypr/hyprland.conf
+vim ~/.config/hypr/hyprland.conf
 ```
 
 Find the stable AMD GPU path first:
@@ -638,7 +637,7 @@ sudo mkdir -p /home/docker-data
 
 Create or edit the Docker daemon config:
 ```bash
-sudo nano /etc/docker/daemon.json
+sudo vim /etc/docker/daemon.json
 ```
 
 Add:
