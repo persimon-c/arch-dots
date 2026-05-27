@@ -269,7 +269,7 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 ## Step 11 — Hostname and Hosts
 
 ```bash
-echo "persmon" > /etc/hostname
+echo "smon-arch" > /etc/hostname
 ```
 
 ```bash
@@ -280,7 +280,7 @@ Add these lines:
 ```
 127.0.0.1   localhost
 ::1         localhost
-127.0.1.1   persmon.localdomain persmon
+127.0.1.1   smon-arch.localdomain smon-arch
 ```
 
 ---
