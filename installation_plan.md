@@ -298,7 +298,7 @@ Set a strong root password. You'll need this to recover from mistakes.
 ## Step 13 — Install Essential Packages
 
 ```bash
-pacman -S grub efibootmgr os-prober ntfs-3g networkmanager sudo git zsh
+pacman -S grub efibootmgr os-prober ntfs-3g networkmanager sudo git zsh curl
 ```
 
 - `ntfs-3g` — required for os-prober to detect the Windows partition
