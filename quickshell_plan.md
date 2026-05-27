@@ -8,7 +8,7 @@ A detailed plan for the Quickshell bar and widget layout for the Arch Linux setu
 
 - **Style:** Pill/island layout — each widget group is its own rounded capsule, not one continuous bar
 - **Visual effect:** Glassmorphism throughout — frosted glass background, backdrop blur, semi-transparent fills
-- **Color theme:** Catppuccin Mocha
+- **Color theme:** Catppuccin Mocha base (hardcoded) + matugen dynamic accent (wallpaper-derived); Lavender is the fallback accent before any wallpaper is processed
 - **Reference:** meloworld dotfiles (https://github.com/end-4/dots-hyprland) for QML structure and component patterns
 
 ---
@@ -42,7 +42,7 @@ Three elements in a row, left to right:
 
 **Default state — something is playing:**
 - Small Cava audio visualizer inside a pill — compact bar visualizer, always running
-- Cava bar color follows Catppuccin accent
+- Cava bar color follows dynamic accent (matugen output); falls back to Lavender (`#b4befe`) before first wallpaper is processed
 
 **Default state — nothing is playing:**
 - Cava pill is replaced with a small GitHub commits pill
@@ -136,7 +136,7 @@ Data is fetched **on panel open** and on **manual refresh** via a refresh button
 - Contribution graph for the past year
 - Sourced from GitHub API using a personal access token
 - Token stored in `~/.config/quickshell/secrets.env`, sourced at runtime, never committed to the dotfiles repo
-- Color intensity follows Catppuccin accent scale
+- Color intensity follows dynamic accent scale (matugen output); falls back to Lavender scale before first wallpaper is processed
 
 **Fallback behavior (API unavailable or token not set):**
 - Shows a muted placeholder grid with a short message: "GitHub unavailable" or "Token not configured"
@@ -239,6 +239,12 @@ nmcli --version
 
 # Confirm asusctl is available
 asusctl --version
+
+# Confirm matugen is installed
+matugen --version
+
+# Confirm a matugen color file exists (should exist after first wallpaper change)
+cat ~/.config/matugen/colors.sh
 ```
 
 ---
@@ -294,7 +300,8 @@ My setup:
 - Shell: zsh
 - Username: simone, Hostname: persmon
 
-Relevant installed tools: playerctl, nmcli, asusctl, supergfxctl, cava, radeontop
+Relevant installed tools: playerctl, nmcli, asusctl, supergfxctl, cava, radeontop, matugen
+Color system: Catppuccin Mocha base (hardcoded) + matugen dynamic accent from ~/.config/matugen/colors.sh; Lavender (#b4befe) is the fallback accent
 
 Current Quickshell API docs (paste relevant sections here):
 [paste from quickshell.outfoxxed.me — if unsure which components to paste, ask Claude first: "which Quickshell components will I need to build [widget name]?" then look them up and paste before proceeding]
@@ -315,7 +322,7 @@ This gives Claude everything it needs to write accurate, version-appropriate QML
 Build in this order. Each step depends on the previous one being stable.
 
 1. **ShellRoot + PanelWindow scaffold** — get a blank bar rendering on screen before adding any content
-2. **Catppuccin color constants** — define all colors in one QML file so everything references the same values
+2. **Color constants file (`colors.qml`)** — hardcode Catppuccin Mocha base colors; set up accent color to read from matugen output file; define Lavender as the hardcoded fallback accent; all other QML files import this one file for every color reference
 3. **Pill component** — a reusable rounded glassmorphism capsule; everything else is built inside this
 4. **Clock pill** — simplest pill, no external data, good for validating the pill component
 5. **Workspace indicator** — first Hyprland IPC integration; validates that `Hyprland` module works on your version
@@ -350,6 +357,12 @@ Build in this order. Each step depends on the previous one being stable.
 - See Implementation Notes — needs a udev rule for non-root access
 - Temporary workaround while testing: prefix with `sudo` to confirm the command itself works, then fix permissions properly
 
+**If dynamic accent colors are not updating after wallpaper change:**
+- Check that `~/.config/matugen/colors.sh` exists and contains color values — if not, run `matugen image ~/wallpapers/yourwallpaper.jpg` manually
+- Check that `colors.qml` is reading from the correct path
+- Quickshell file watcher should auto-reload `colors.qml` when the file changes (v0.3.0+) — if it doesn't, trigger a manual reload with `quickshell --reload`
+- Verify the wallpaper-change script is actually calling matugen after swww
+
 **If the GitHub GraphQL call returns nothing:**
 - Check that the token in `~/.config/quickshell/secrets.env` is exported correctly
 - Test the query with `curl` in terminal first:
@@ -367,7 +380,7 @@ curl -H "Authorization: bearer YOUR_TOKEN" \
 ```
 ~/.config/quickshell/
 ├── shell.qml               # ShellRoot entry point — sources everything
-├── colors.qml              # Catppuccin Mocha color constants
+├── colors.qml              # Base colors: hardcoded Catppuccin Mocha; accent colors: read from matugen output at ~/.config/matugen/colors.sh; Quickshell file watcher auto-reloads this file when matugen regenerates it
 ├── bar/
 │   ├── Bar.qml             # Top bar PanelWindow
 │   ├── PillBase.qml        # Reusable pill/capsule component
