@@ -191,7 +191,7 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia appname
 | Dock | nwg-dock-hyprland | Quick app access for users transitioning from Windows taskbar |
 | App launcher | Rofi-wayland | More powerful and customizable than Wofi |
 | Notifications | Swaync | Notification center panel, more functional than Dunst/Mako for daily use |
-| Wallpaper | Swww | Supports animated wallpapers and smooth transitions, superset of Hyprpaper |
+| Wallpaper | Awww | Supports animated wallpapers and smooth transitions, superset of Hyprpaper |
 | Dynamic theming | matugen | Generates Material You accent palette from wallpaper; blended with Catppuccin Mocha base for dynamic theming |
 | Wallpaper thumbnails | tumbler | Generates XDG-spec thumbnails for Rofi wallpaper picker |
 | Screen locker | Hyprlock | Made by the Hyprland developer, native integration |
@@ -617,7 +617,7 @@ yay -S quickshell-git
 
 ### Wallpaper Direction
 
-Anime landscape wallpapers — sky, nature, Mt. Fuji style, pastoral scenes. Colors should complement the pastel palette. Swww handles animated wallpapers with smooth transitions if animated wallpapers are desired later.
+Anime landscape wallpapers — sky, nature, Mt. Fuji style, pastoral scenes. Colors should complement the pastel palette. Awww handles animated wallpapers with smooth transitions if animated wallpapers are desired later.
 
 ---
 
@@ -747,7 +747,7 @@ Hyprland config lives in `~/.config/hypr/`. Rather than one large `hyprland.conf
 ├── animations.conf       # Animation curves and speeds
 ├── decoration.conf       # Blur, rounding, shadows, opacity
 ├── layout.conf           # Tiling layout settings (gaps, border sizes)
-└── autostart.conf        # exec-once lines (Quickshell, swww, hypridle, etc.)
+└── autostart.conf        # exec-once lines (Quickshell, awww, hypridle, etc.)
 ```
 
 ### hyprland.conf (entry point)
@@ -771,7 +771,7 @@ source = ~/.config/hypr/autostart.conf
 - **env.conf separate** — GPU path, `LIBVA_DRIVER_NAME`, and Wayland flags are hardware-specific. Keeping them isolated makes it easy to diff or override per machine if Chezmoi templates are used later.
 - **keybinds.conf separate** — already has a standalone `keybinds.md` in the repo; the config file mirrors that document.
 - **autostart.conf separate** — exec-once lines change often during ricing; isolation reduces noise in git diffs. Must include:
-  - `exec-once = swww-daemon` — starts the wallpaper daemon
+  - `exec-once = awww-daemon` — starts the wallpaper daemon
   - `exec-once = ~/.config/hypr/scripts/wallpaper-change.sh ~/.cache/current_wallpaper` — restores the last wallpaper on login; falls back gracefully if cache file does not exist yet
 - **decoration + animations separate** — these are the most frequently tweaked during ricing. Isolation keeps the iteration loop tight.
 
@@ -813,7 +813,7 @@ These require manual attention after base install — they cannot be scripted ge
 | Hypridle timeouts | Low | 5min lock, 10min display off |
 | Flatpak + Flatseal setup | Low | Install Discord, Zoom, Spotify via Flatpak; set Wayland flags via Flatseal |
 | matugen setup | Low | Run once against first wallpaper to generate initial color files; verify ~/.config/matugen/colors.sh exists |
-| Wallpaper switcher script | Low | Write wallpaper-change.sh (swww → matugen → app reloads) and Rofi wallpaper picker script; set keybind |
+| Wallpaper switcher script | Low | Write wallpaper-change.sh (awww → matugen → app reloads) and Rofi wallpaper picker script; set keybind |
 
 ---
 
@@ -881,7 +881,7 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 | btrfs | ext4 chosen for performance, simplicity |
 | power-profiles-daemon | Conflicts with asusctl — use asusctl for ASUS hardware instead |
 | Paru | yay chosen as AUR helper |
-| Hyprpaper | Swww is a strict superset |
+| Hyprpaper | Awww is a strict superset |
 | Eww | Quickshell chosen — native match for meloworld aesthetic, QML is more familiar than Yuck |
 
 ---

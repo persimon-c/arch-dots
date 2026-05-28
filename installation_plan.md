@@ -547,7 +547,7 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
                pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber \
                pavucontrol bluez bluez-utils blueman ufw
 
-yay -S sddm-git hyprlock hypridle swww rofi-wayland swaync \
+yay -S sddm-git hyprlock hypridle awww rofi-wayland swaync \
        nwg-dock-hyprland hyprshot cliphist wl-clipboard \
        kitty zellij yazi thunar
 ```

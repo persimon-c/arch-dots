@@ -192,7 +192,7 @@ These are managed by other tools per the main setup plan:
 
 | Thing | Handled by |
 |---|---|
-| Wallpaper | swww |
+| Wallpaper | awww |
 | Notifications panel | Swaync |
 | App launcher | Rofi-wayland |
 | Clipboard history | cliphist + Rofi |
@@ -361,7 +361,7 @@ Build in this order. Each step depends on the previous one being stable.
 - Check that `~/.config/matugen/colors.sh` exists and contains color values — if not, run `matugen image ~/wallpapers/yourwallpaper.jpg` manually
 - Check that `colors.qml` is reading from the correct path
 - Quickshell file watcher should auto-reload `colors.qml` when the file changes (v0.3.0+) — if it doesn't, trigger a manual reload with `quickshell --reload`
-- Verify the wallpaper-change script is actually calling matugen after swww
+- Verify the wallpaper-change script is actually calling matugen after awww
 
 **If the GitHub GraphQL call returns nothing:**
 - Check that the token in `~/.config/quickshell/secrets.env` is exported correctly

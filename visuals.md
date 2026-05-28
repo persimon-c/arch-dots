@@ -1,5 +1,7 @@
 # Visual Aesthetics Plan
 
+> **For Claude sessions:** paste the relevant app section + the Consistency Rules table + the config file location for that app from the Config File Locations section at the bottom. That is all the context needed.
+
 A detailed plan for the visual identity of the Arch Linux desktop setup on the ASUS TUF Gaming FX505DT.
 
 ---
@@ -51,7 +53,7 @@ A detailed plan for the visual identity of the Arch Linux desktop setup on the A
 - **Style:** Anime illustrated scenery — landscapes, nature, atmospheric scenes
 - **Mood:** Soft lighting, warm or pastel tones, depth — think Studio Ghibli-adjacent or similar illustrated worlds
 - **Avoid:** Dark/gritty art, character-focused illustrations (too busy behind windows), overly saturated neon scenes
-- **Tool:** swww — supports smooth crossfade transitions between wallpapers
+- **Tool:** awww — supports smooth crossfade transitions between wallpapers
 - **Transition:** Slow crossfade on wallpaper change, consistent with the floaty animation style of the rest of the desktop
 - **Wallpaper directory:** `~/wallpapers/` — curate a small set here; subdirectories are fine (e.g. `~/wallpapers/day/`, `~/wallpapers/night/`)
 - **Current wallpaper tracking:** The wallpaper-change script writes the active wallpaper path to `~/.cache/current_wallpaper` — Hyprlock reads from this file so the lock screen always matches the desktop
@@ -68,7 +70,7 @@ A Rofi-based wallpaper picker, inspired by HyDE's implementation. Triggered by a
 2. Rofi opens in a thumbnail grid view showing all wallpapers in `~/wallpapers/`
 3. User selects a wallpaper
 4. The wallpaper-change script runs in sequence:
-   - swww applies the wallpaper with a bubble/grow transition expanding from the cursor position (see Transition Details below)
+   - awww applies the wallpaper with a bubble/grow transition expanding from the cursor position (see Transition Details below)
    - Writes the new path to `~/.cache/current_wallpaper`
    - `matugen image <path>` — regenerates accent palette from new wallpaper
    - Reloads affected apps: Hyprland (border colors), Quickshell (color file reload), Kitty (via kitty @ set-colors), Rofi (reads new colors file), Swaync (restart or reload)
@@ -104,11 +106,11 @@ Confirmed: `SUPER + W` — Super+W is reserved exclusively for wallpaper switche
 
 ### Transition Details
 
-Sourced directly from HyDE's `wallpaper.swww.sh`. The bubble effect comes from the bezier overshoot and grow transition expanding from the cursor.
+Sourced directly from HyDE's `wallpaper.awww.sh`. The bubble effect comes from the bezier overshoot and grow transition expanding from the cursor.
 
 **Next wallpaper (grow from cursor):**
 ```bash
-swww img <path> \
+awww img <path> \
   --transition-bezier .43,1.19,1,.4 \
   --transition-type grow \
   --transition-duration 0.4 \
@@ -119,7 +121,7 @@ swww img <path> \
 
 **Previous wallpaper (outer — reverse bubble, shrinks inward):**
 ```bash
-swww img <path> \
+awww img <path> \
   --transition-bezier .43,1.19,1,.4 \
   --transition-type outer \
   --transition-duration 0.4 \
