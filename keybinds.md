@@ -60,6 +60,9 @@ All keybinds for the Arch Linux / Hyprland setup on the ASUS TUF Gaming FX505DT.
 | `Super + N` | Toggle Swaync notification panel |
 | `Super + G` | Toggle right sidebar (Git/Repo panel) |
 | `Super + E` | Yazi file manager (in Kitty) |
+| `Super + Z` | Zellij (plain, no layout) |
+| `Super + Shift + Z` | Zellij dev layout (main + logs + lazygit) |
+| `Super + C` | Color picker (hyprpicker — hex to clipboard + notification) |
 
 ---
 
