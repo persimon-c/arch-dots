@@ -544,6 +544,7 @@ You should see Silent, Balanced, Performance profiles.
 ```bash
 sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
                tumbler \
+               fzf zellij \
                pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber \
                pavucontrol bluez bluez-utils blueman ufw
 
@@ -712,6 +713,7 @@ Then re-enable Secure Boot in BIOS. Both Windows and Arch will boot normally.
 | Windows missing from GRUB | Only Arch in boot menu | Reboot without USB, re-run grub-mkconfig |
 | matugen colors not loading | Accent stays at Lavender fallback | Run `matugen image ~/wallpapers/yourwallpaper.jpg` manually to generate ~/.config/matugen/colors.sh |
 | radeontop permission denied | GPU gauge shows nothing in Quickshell | Add udev rule and add user to video group — see setup_plan.md radeontop note |
+| fzf keybinds not working in zsh | Ctrl+R still uses default history | Add `source /usr/share/fzf/key-bindings.zsh` to .zshrc |
 | `card1` not stable | Hyprland fails to start with wrong GPU | Use `/dev/dri/by-path/` path instead |
 | Unplugged battery causes black screen | Screen goes dark when charger removed | Add `iommu=pt` to GRUB kernel parameters |
 | asusd won't start | Fan control unavailable | Check `modinfo asus_wmi`, verify kernel module is present |
