@@ -204,7 +204,7 @@ These are managed by other tools per the main setup plan:
 
 | Decision | Notes |
 |---|---|
-| Right sidebar keybind | Pick after base keybinds are settled |
+| Right sidebar keybind | Confirmed: `Super + G` |
 | Cava bar color | Static Catppuccin accent or reactive to album art |
 | Repo root directory | Recommended: `~/dev` — confirm on first boot |
 | GitHub username | Configure in widget secrets/config file |
