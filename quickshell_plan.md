@@ -300,7 +300,7 @@ My setup:
 - Shell: zsh
 - Username: simone, Hostname: persmon
 
-Relevant installed tools: playerctl, nmcli, asusctl, supergfxctl, cava, radeontop, matugen
+Relevant installed tools: playerctl, nmcli, asusctl, supergfxctl, cava, radeontop, matugen, lazygit, fzf, zellij, hyprpicker
 Color system: Catppuccin Mocha base (hardcoded) + matugen dynamic accent from ~/.config/matugen/colors.sh; Lavender (#b4befe) is the fallback accent
 
 Current Quickshell API docs (paste relevant sections here):

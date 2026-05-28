@@ -222,6 +222,8 @@ Custom pixel art / anime theme. Target aesthetic: character sprite, clock displa
 | Node version manager | fnm | Faster than nvm, written in Rust |
 | Python version manager | pyenv | Standard for web/backend Python development |
 | Git UI | Lazygit | Terminal UI, shows diffs, changed files, file paths — replaces GitHub Desktop |
+| Fuzzy finder | fzf | Fuzzy search for files, zsh history, and git branches — integrates with zsh via key-bindings.zsh |
+| Color picker | hyprpicker (AUR) | Wayland-native color picker — click any pixel, hex copied to clipboard + notification |
 | Dotfiles manager | Chezmoi | Templating, secrets support, works across machines |
 | Containers | Docker | Most compatibility with dev tooling |
 | System monitor | Btop | Shows CPU, RAM, GPU, network, disk in one beautiful TUI |
@@ -814,6 +816,9 @@ These require manual attention after base install — they cannot be scripted ge
 | Flatpak + Flatseal setup | Low | Install Discord, Zoom, Spotify via Flatpak; set Wayland flags via Flatseal |
 | matugen setup | Low | Run once against first wallpaper to generate initial color files; verify ~/.config/matugen/colors.sh exists |
 | Wallpaper switcher script | Low | Write wallpaper-change.sh (awww → matugen → app reloads) and Rofi wallpaper picker script; set keybind |
+| fzf zsh integration | Low | Add `source /usr/share/fzf/key-bindings.zsh` and `source /usr/share/fzf/completion.zsh` to .zshrc — enables Ctrl+R fuzzy history search and Ctrl+T fuzzy file search |
+| lazygit Catppuccin theme | Low | Apply official Catppuccin Mocha theme from github.com/catppuccin/lazygit to ~/.config/lazygit/config.yml |
+| Zellij layouts | Low | Write dev-layout.kdl (main pane + bottom logs + side lazygit); plain Zellij is default on Super+Z, dev layout on Super+Shift+Z |
 
 ---
 
