@@ -96,12 +96,11 @@ All keybinds for the Arch Linux / Hyprland setup on the ASUS TUF Gaming FX505DT.
 
 | Keybind | Action | Tool |
 |---|---|---|
-| `Print` | Full screen screenshot | grimblast |
-| `Super + Print` | Selected region screenshot | grimblast |
-| `Super + Shift + Print` | Active window screenshot | grimblast |
-| `Super + Ctrl + Print` | Screenshot + copy to clipboard | grimblast |
+| `Print` | Full screen screenshot (direct) | grimblast |
+| `Super + Print` | Region screenshot (direct) | grimblast |
+| `Super + Shift + Print` | Enter screenshot submap — choose type interactively | see Submaps section |
 
-All screenshots saved to `~/Pictures/screenshots/` with a timestamp filename.
+Direct binds save to `~/Pictures/screenshots/` with a timestamp filename. Clipboard-only option is inside the submap (`C` key).
 
 ---
 
@@ -134,10 +133,10 @@ Add `brightnessctl` to package list — `sudo pacman -S brightnessctl`.
 
 | Keybind | Action |
 |---|---|
-| `Super + L` | Lock screen (hyprlock) |
-| `Super + M` | Exit Hyprland |
+| `Super + L` | Lock screen (hyprlock) — also available inside System submap |
 | `Super + Shift + R` | Reload Hyprland config |
 | `Super + Shift + Q` | Quickshell reload |
+| `Super + Shift + S` | Enter System submap (suspend / reboot / shutdown / exit Hyprland) |
 
 ---
 
@@ -175,38 +174,127 @@ Note: the left sidebar is mouse-only (Arch logo click). The right sidebar has bo
 
 ---
 
-## Submaps (Planned — Post-Install)
+## Submaps
 
-Submaps are modal keybinding layers. When active, normal keybinds are suspended and the submap's keybinds apply instead. Exit any submap with `Escape`.
+Submaps are modal keybinding layers. When a submap is active, normal keybinds are suspended and only the submap's keybinds apply. Exit any submap with `Escape`.
 
-> **These are not yet defined.** Submap design will be done post-install once the base workflow is established and it becomes clear which actions benefit from a modal layer.
+Use `binde` (not `bind`) inside submaps for actions that should repeat while the key is held.
 
-### Potential Submaps to Consider
+---
 
-| Submap | Trigger | Purpose |
-|---|---|---|
-| Resize mode | `Super + R` | Resize windows with arrow keys without holding Super |
-| System mode | `Super + Shift + S` | Lock / suspend / reboot / shutdown in one layer |
-| Screenshot mode | `Super + Shift + Print` | Choose screenshot type interactively |
-| Layout mode | `Super + Shift + L` | Change tiling layout, toggle gaps, etc. |
+### Resize Mode
 
-### Submap Template (for keybinds.conf)
+**Trigger:** `Super + R`
+**Exit:** `Escape`
+
+Enter this mode to resize the active window with just arrow keys — no need to hold Super + Ctrl every press.
+
+| Key | Action |
+|---|---|
+| `Right` | Grow window right (20px) |
+| `Left` | Shrink window right (-20px) |
+| `Down` | Grow window down (20px) |
+| `Up` | Shrink window down (-20px) |
+| `Escape` | Exit resize mode |
 
 ```ini
-# Enter submap
+# Enter resize submap
 bind = SUPER, R, submap, resize
 
-# Inside resize submap
 submap = resize
 binde = , right, resizeactive, 20 0
 binde = , left, resizeactive, -20 0
-binde = , up, resizeactive, 0 -20
 binde = , down, resizeactive, 0 20
+binde = , up, resizeactive, 0 -20
 bind = , escape, submap, reset
 submap = reset
 ```
 
-Use `binde` (not `bind`) inside submaps for actions that should repeat while the key is held.
+---
+
+### System Mode
+
+**Trigger:** `Super + Shift + S`
+**Exit:** `Escape` or any action (actions auto-exit the submap)
+
+Prevents accidental triggers on destructive actions — you have to consciously enter this mode first.
+
+| Key | Action |
+|---|---|
+| `L` | Lock screen (hyprlock) |
+| `S` | Suspend |
+| `R` | Reboot |
+| `Q` | Shutdown |
+| `E` | Exit Hyprland |
+| `Escape` | Cancel — exit without doing anything |
+
+```ini
+# Enter system submap
+bind = SUPER SHIFT, S, submap, system
+
+submap = system
+bind = , L, exec, hyprlock
+bind = , L, submap, reset
+bind = , S, exec, systemctl suspend
+bind = , S, submap, reset
+bind = , R, exec, systemctl reboot
+bind = , R, submap, reset
+bind = , Q, exec, systemctl poweroff
+bind = , Q, submap, reset
+bind = , E, exit
+bind = , escape, submap, reset
+submap = reset
+```
+
+Note: `Super + L` still works as a direct lock keybind outside of this submap — system mode is for the destructive actions (reboot, shutdown, suspend).
+
+---
+
+### Screenshot Mode
+
+**Trigger:** `Super + Shift + Print` (replaces the old direct bind for active window screenshot — that bind moves into this submap)
+**Exit:** `Escape` or any action (actions auto-exit)
+
+Replaces having to remember three separate screenshot combos.
+
+| Key | Action | Saves to |
+|---|---|---|
+| `F` | Full screen screenshot | `~/Pictures/screenshots/` |
+| `R` | Region selection screenshot | `~/Pictures/screenshots/` |
+| `W` | Active window screenshot | `~/Pictures/screenshots/` |
+| `C` | Region screenshot — clipboard only | Clipboard, no file saved |
+| `Escape` | Cancel | — |
+
+```ini
+# Enter screenshot submap
+bind = SUPER SHIFT, Print, submap, screenshot
+
+submap = screenshot
+bind = , F, exec, grimblast save screen ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
+bind = , F, submap, reset
+bind = , R, exec, grimblast save area ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
+bind = , R, submap, reset
+bind = , W, exec, grimblast save active ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
+bind = , W, submap, reset
+bind = , C, exec, grimblast copy area
+bind = , C, submap, reset
+bind = , escape, submap, reset
+submap = reset
+```
+
+Note: `Print` alone (full screenshot, direct) and `Super + Print` (region, direct) are kept as standalone binds outside this submap for quick one-shot use. The submap is for when you want to choose the type interactively.
+
+---
+
+### Future Submaps (Undecided)
+
+These may be added post-install once the base workflow is established:
+
+| Submap | Trigger | Purpose |
+|---|---|---|
+| Performance profile | `Super + P` | Silent / Balanced / Turbo via asusctl |
+| Layout mode | `Super + Shift + L` | Tiling layout changes, gap toggles |
+| Passthrough | `Super + F2` | Forward all keys to active app (for gaming) |
 
 ---
 
