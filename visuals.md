@@ -288,6 +288,34 @@ Note: `smoothOut` bezier (`0.36, 0, 0.66, -0.56`) has a negative Y value causing
 
 ---
 
+## Zellij
+
+- **Theme:** Catppuccin Mocha — official theme at `github.com/catppuccin/zellij`
+- **Status bar:** minimal — show current mode, tab name, session name only
+- **Font:** JetBrains Mono Nerd Font (inherits from Kitty)
+- **Config file:** `~/.config/zellij/config.kdl`
+
+### Layouts
+
+**Plain layout** (`Super + Z`) — no pre-split panes, just a clean terminal. Default session.
+
+**Dev layout** (`Super + Shift + Z`) — three panes:
+- Left/main: full-height terminal (editor or shell)
+- Bottom-right: logs / command output pane
+- Top-right: lazygit pane
+
+Layout file: `~/.config/zellij/layouts/dev-layout.kdl`
+
+---
+
+## lazygit
+
+- **Theme:** Catppuccin Mocha — set in `~/.config/lazygit/config.yml`; official theme at `github.com/catppuccin/lazygit`
+- **Lives inside:** Zellij top-right pane in dev layout, or standalone in any terminal
+- **Config file:** `~/.config/lazygit/config.yml`
+
+---
+
 ## Consistency Rules
 
 These apply across every UI surface:
@@ -316,6 +344,8 @@ These apply across every UI surface:
 | Rofi | `~/.config/rofi/catppuccin-mocha.rasi` |
 | Rofi wallpaper picker | `~/.config/rofi/wallpaper-picker.sh` |
 | Zellij | `~/.config/zellij/config.kdl` |
+| Zellij dev layout | `~/.config/zellij/layouts/dev-layout.kdl` |
+| lazygit | `~/.config/lazygit/config.yml` |
 | Yazi | `~/.config/yazi/yazi.toml` |
 | Hyprlock | `~/.config/hypr/hyprlock.conf` |
 | Hypridle | `~/.config/hypr/hypridle.conf` |
