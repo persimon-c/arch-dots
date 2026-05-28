@@ -1,4 +1,5 @@
 # Visual Aesthetics Plan
+
 A detailed plan for the visual identity of the Arch Linux desktop setup on the ASUS TUF Gaming FX505DT.
 
 ---
@@ -99,7 +100,7 @@ Rofi needs image thumbnails to show the grid. Options:
 
 ### Keybind
 
-To be decided post-install once base keybinds are settled. Suggested: `SUPER + W` (W for wallpaper).
+Confirmed: `SUPER + W` — Super+W is reserved exclusively for wallpaper switcher across all config files. Super+Q is close window.
 
 ### Transition Details
 
