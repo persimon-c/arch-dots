@@ -196,7 +196,6 @@ These are managed by other tools per the main setup plan:
 | Notifications panel | Swaync |
 | App launcher | Rofi-wayland |
 | Clipboard history | cliphist + Rofi |
-| Dock | nwg-dock-hyprland |
 
 ---
 

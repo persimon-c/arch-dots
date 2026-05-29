@@ -313,7 +313,6 @@ These windows should always open floating regardless of tiling state. Define in 
 | Thunar (file picker) | Float, center | When opened as a dialog |
 | Calculator | Float, center | Small utility |
 | Hyprlock | Fullscreen | Lock screen |
-| nwg-dock | Float | Dock behavior |
 | Password prompt dialogs | Float, center | Auth dialogs |
 
 ---
