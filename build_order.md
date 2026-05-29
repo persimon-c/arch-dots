@@ -71,10 +71,24 @@ If Hyprland fails to start, check `journalctl --user -xe` for errors before proc
 - [ ] Reboot: `reboot`
 - [ ] Verify SDDM login screen appears
 - [ ] Log in as `simone` — Hyprland should start automatically via SDDM
-- [ ] Source a pixel art / anime SDDM theme from GitHub community themes, install it, and set it in `/etc/sddm.conf`:
-  ```ini
-  [Theme]
-  Current=<theme-name>
+- [ ] Install the sddm-astronaut-theme:
+  ```bash
+  yay -S sddm-astronaut-theme
+  ```
+- [ ] Pick a theme variant by editing the metadata file:
+  ```bash
+  sudo sed -i 's|^ConfigFile=.*|ConfigFile=Themes/astronaut.conf|' \
+    /usr/share/sddm/themes/sddm-astronaut-theme/metadata.desktop
+  ```
+  Available variants are in `/usr/share/sddm/themes/sddm-astronaut-theme/Themes/` — swap `astronaut.conf` for any other config file in that directory to try a different look.
+- [ ] Set SDDM to use the theme via a drop-in config (do not edit `/etc/sddm.conf` directly):
+  ```bash
+  sudo mkdir -p /etc/sddm.conf.d
+  echo -e "[Theme]\nCurrent=sddm-astronaut-theme" | sudo tee /etc/sddm.conf.d/theme.conf
+  ```
+- [ ] Preview without logging out:
+  ```bash
+  sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/sddm-astronaut-theme/
   ```
 - [ ] Verify the themed login screen appears on next reboot
 
@@ -84,11 +98,13 @@ If Hyprland fails to start, check `journalctl --user -xe` for errors before proc
 
 Do this before theming anything — font rendering affects how every app looks.
 
+> **File to deploy:** `font-rendering.md` contains the exact shell steps for writing `/etc/fonts/local.conf` and rebuilding the font cache. The XML content is in `setup_plan.md`; `font-rendering.md` adds the missing shell commands around it.
+
 - [ ] Install freetype2 and fontconfig if not already present:
   ```bash
   sudo pacman -S freetype2 fontconfig
   ```
-- [ ] Create `/etc/fonts/local.conf` with subpixel rendering, hinting, and antialiasing (see `setup_plan.md` Font Rendering section for the exact XML)
+- [ ] Follow `font-rendering.md` to write `/etc/fonts/local.conf` and run the write command
 - [ ] Rebuild font cache: `fc-cache -fv`
 - [ ] Log out and back in
 - [ ] Verify fonts look sharper in Kitty and rofi compared to before
@@ -99,8 +115,22 @@ Do this before theming anything — font rendering affects how every app looks.
 
 Wallpaper and color generation must be working before theming any app — matugen output is the source of truth for accent colors everywhere.
 
+> **Files to deploy before starting this phase:**
+> - `matugen-config.toml` → `~/.config/matugen/config.toml`
+> - `matugen-template-colors.sh` → `~/.config/matugen/templates/colors.sh`
+> - `matugen-template-colors.css` → `~/.config/matugen/templates/colors.css`
+> - `matugen-template-hypr-colors.conf` → `~/.config/matugen/templates/hypr-colors.conf`
+> - `matugen-template-kitty-colors.conf` → `~/.config/matugen/templates/kitty-colors.conf`
+>
+> See `matugen-setup.md` for the full template configuration, directory structure, verification commands, and what to check if matugen runs but writes nothing.
+
+- [ ] Create the matugen config directory and deploy the files above:
+  ```bash
+  mkdir -p ~/.config/matugen/templates
+  ```
+- [ ] Verify the matugen config and templates are in place: `cat ~/.config/matugen/config.toml`
 - [ ] Add at least one wallpaper to `~/wallpapers/` (anime scenery, soft tones — see `visuals.md`)
-- [ ] Write `~/.config/hypr/scripts/wallpaper-change.sh` — the chain script that runs awww → writes `~/.cache/current_wallpaper` → calls matugen → reloads affected apps. Full script spec is in `visuals.md` Wallpaper Switcher section
+- [ ] Deploy `wallpaper-change.sh` → `~/.config/hypr/scripts/wallpaper-change.sh`
 - [ ] Make it executable: `chmod +x ~/.config/hypr/scripts/wallpaper-change.sh`
 - [ ] Run it manually against your first wallpaper:
   ```bash
@@ -110,7 +140,7 @@ Wallpaper and color generation must be working before theming any app — matuge
 - [ ] Verify `~/.config/matugen/colors.sh` exists and contains color values: `cat ~/.config/matugen/colors.sh`
 - [ ] Verify `~/.config/hypr/colors.conf` was updated by matugen with a real accent color (not just the Lavender fallback)
 - [ ] Reload Hyprland: `hyprctl reload` — window borders should now reflect the wallpaper-derived accent color
-- [ ] Write `~/.config/rofi/wallpaper-picker.sh` — the Rofi thumbnail picker script (see `visuals.md` Scripts section)
+- [ ] Deploy `wallpaper-picker.sh` → `~/.config/rofi/wallpaper-picker.sh`
 - [ ] Make it executable: `chmod +x ~/.config/rofi/wallpaper-picker.sh`
 - [ ] Test the wallpaper switcher keybind: `Super + W` → Rofi grid should appear with wallpaper thumbnails → select one → wallpaper changes with bubble transition
 - [ ] Verify the bubble transition plays correctly (grow from cursor on next, outer shrink on previous)
@@ -124,13 +154,12 @@ Apply Catppuccin Mocha + matugen accent theming to each app. Work through these 
 
 ### Kitty
 
-- [ ] Create `~/.config/kitty/kitty.conf` with:
-  - Font: JetBrains Mono Nerd Font, 13px
-  - Background opacity: `0.88`
-  - Cursor style: beam, dynamic accent color
-  - Cursor trail: enabled (`cursor_trail 1`)
-  - Comfortable internal padding
-- [ ] Create `~/.config/kitty/matugen-colors.conf` — matugen should be writing this already via the wallpaper-change script; verify it exists and has color values
+> **Files to deploy:**
+> - `kitty.conf` → `~/.config/kitty/kitty.conf`
+> - `matugen-template-kitty-colors.conf` is already in place from Phase 6 — matugen writes the output to `~/.config/kitty/matugen-colors.conf` on each wallpaper change
+
+- [ ] Deploy `kitty.conf` → `~/.config/kitty/kitty.conf`
+- [ ] Verify `~/.config/kitty/matugen-colors.conf` exists and has color values (written by matugen in Phase 6)
 - [ ] Reload Kitty colors: `kitty @ set-colors --all ~/.config/kitty/matugen-colors.conf`
 - [ ] Verify Kitty looks correct: Catppuccin Mocha base, accent cursor, slight transparency
 
@@ -148,26 +177,30 @@ Apply Catppuccin Mocha + matugen accent theming to each app. Work through these 
 
 ### Hyprlock
 
-- [ ] Create `~/.config/hypr/hyprlock.conf`:
-  - Background: blurred current wallpaper from `~/.cache/current_wallpaper`
-  - Clock: large, centered, JetBrains Mono
-  - Input field: rounded pill, glassmorphism
-  - Colors: Catppuccin Mocha base + matugen accent
+> **File to deploy:** `hyprlock.conf` → `~/.config/hypr/hyprlock.conf`
+> Note: this file uses `$HOME/.cache/current_wallpaper` for the background path — Hyprlock does not expand `~`, so `$HOME` is used instead.
+
+- [ ] Deploy `hyprlock.conf` → `~/.config/hypr/hyprlock.conf`
 - [ ] Test: `Super + L` — lock screen should appear with correct wallpaper and styling
 
 ### Hypridle
 
-- [ ] Create `~/.config/hypr/hypridle.conf`:
-  - 5 minutes → hyprlock
-  - 10 minutes → display off
-  - Lid close → lock (via `/etc/systemd/logind.conf`: `HandleLidSwitch=lock`)
+> **File to deploy:** `hypridle.conf` → `~/.config/hypr/hypridle.conf`
+
+- [ ] Deploy `hypridle.conf` → `~/.config/hypr/hypridle.conf`
+- [ ] Set lid-close behavior: edit `/etc/systemd/logind.conf`, add `HandleLidSwitch=lock`
 - [ ] Start hypridle: `hypridle &`
 - [ ] Verify it's added to `~/.config/hypr/autostart.conf` so it starts on login
 
 ### Zellij
 
-- [ ] Create `~/.config/zellij/config.kdl` — Catppuccin Mocha theme, minimal status bar (mode + tab name + session name only)
-- [ ] Create `~/.config/zellij/layouts/dev-layout.kdl` — three panes: left/main full-height, bottom-right logs, top-right lazygit
+> **Files to deploy:**
+> - `zellij-config.kdl` → `~/.config/zellij/config.kdl`
+> - `dev-layout.kdl` → `~/.config/zellij/layouts/dev-layout.kdl`
+
+- [ ] Create the layouts directory: `mkdir -p ~/.config/zellij/layouts`
+- [ ] Deploy `zellij-config.kdl` → `~/.config/zellij/config.kdl`
+- [ ] Deploy `dev-layout.kdl` → `~/.config/zellij/layouts/dev-layout.kdl`
 - [ ] Test plain launch: `Super + Z` → clean Zellij session
 - [ ] Test dev layout: `Super + Shift + Z` → three-pane layout with lazygit in top-right
 
@@ -190,14 +223,11 @@ Apply Catppuccin Mocha + matugen accent theming to each app. Work through these 
 
 ### Cursor
 
+> **File to deploy:** `gtk-3.0-settings.ini` → `~/.config/gtk-3.0/settings.ini`
+
 - [ ] Verify `catppuccin-cursors-mocha` is installed (installed in Step 24 of installation plan)
 - [ ] Verify `XCURSOR_THEME=Catppuccin-Mocha-Dark` is set in `~/.config/hypr/env.conf`
-- [ ] Set cursor for GTK apps: create/edit `~/.config/gtk-3.0/settings.ini`:
-  ```ini
-  [Settings]
-  gtk-cursor-theme-name=Catppuccin-Mocha-Dark
-  gtk-cursor-theme-size=24
-  ```
+- [ ] Deploy `gtk-3.0-settings.ini` → `~/.config/gtk-3.0/settings.ini`
 - [ ] Reload Hyprland: `hyprctl reload`
 - [ ] Verify cursor looks correct in both Hyprland and GTK apps
 
@@ -251,7 +281,7 @@ Install and verify each development tool. These are independent — order within
   Install a Python version: `pyenv install 3.13.0 && pyenv global 3.13.0`
 
 - [ ] Install Helix editor: `sudo pacman -S helix`
-- [ ] Install Antigravity (Google IDE): install per instructions at `antigravity.google`
+- [ ] Install Antigravity (Google IDE): `yay -S antigravity-ide` — the AUR package's wrapper script reads `~/.config/antigravity-flags.conf` automatically; the Wayland flag (`--ozone-platform-hint=auto`) is already set in that file
 - [ ] Install VSCode: `yay -S visual-studio-code-bin`
 - [ ] Install Sublime Text: `yay -S sublime-text-4`
 - [ ] Install Btop (if not done in Phase 7): `sudo pacman -S btop`
@@ -265,6 +295,9 @@ Install and verify each development tool. These are independent — order within
 
 Do this once all config files from Phases 3–10 are stable and you're happy with how things look. Committing half-finished configs to Chezmoi creates noise.
 
+> **Before this phase:** set up the pacman hooks. See `pacman-hooks.md` for both hooks with exact `tee` commands, the hooks directory creation, and Chezmoi tracking instructions. Do this now so the hooks are in place before your first post-setup `yay` run.
+
+- [ ] Follow `pacman-hooks.md` to create both hooks (sbctl-sign-reminder and grub-fallback) and add them to Chezmoi
 - [ ] Initialize Chezmoi: `chezmoi init`
 - [ ] Add all config directories:
   ```bash
@@ -278,6 +311,7 @@ Do this once all config files from Phases 3–10 are stable and you're happy wit
   chezmoi add ~/.config/swaync/
   chezmoi add ~/.config/zathura/
   chezmoi add ~/.config/btop/
+  chezmoi add ~/.config/matugen/
   chezmoi add ~/.zshrc
   chezmoi add /etc/fonts/local.conf
   ```
@@ -351,7 +385,7 @@ hyprctl version
 - [ ] Create `~/.config/quickshell/bar/BatteryPill.qml` — percentage + charging icon
 - [ ] Click → dropdown with Silent / Balanced / Performance; clicking each calls `asusctl profile -P <name>`
 - [ ] Verify active profile is highlighted and switches correctly
-- [ ] Verify syncs with left sidebar quick settings (Phase 12.13)
+- [ ] Verify syncs with left sidebar quick settings (Phase 12.15)
 
 ### 12.9 — Bluetooth Pill
 
@@ -379,8 +413,11 @@ hyprctl version
 
 ### 12.13 — Cava Pill
 
-- [ ] Install and configure cava: `sudo pacman -S cava`
-- [ ] Configure `~/.config/cava/config` with `output_method = raw` or `output_method = csv` for machine-readable output
+> **File to deploy:** `cava.config` → `~/.config/cava/config`
+> This file sets `output_method` to the correct value for machine-readable output. Deploy it before installing cava so the config is ready immediately.
+
+- [ ] Install cava: `sudo pacman -S cava`
+- [ ] Deploy `cava.config` → `~/.config/cava/config`
 - [ ] Create `~/.config/quickshell/bar/CavaPill.qml` — compact bar visualizer; color follows dynamic accent
 - [ ] When nothing is playing: replace with GitHub commits pill showing commit count for current week (sourced from GitHub API using the token in `secrets.env`)
 - [ ] Verify Cava bars animate when audio plays; verify GitHub pill appears when audio stops
@@ -405,6 +442,8 @@ Build sections one at a time. Don't move to the next section until the previous 
 - [ ] Verify panel opens and closes smoothly; verify all data is fetched fresh on open
 
 ### 12.16 — Right Sidebar
+
+> **Note:** `repoRoot` in the QML config must be set as `property string repoRoot: "/home/simone/dev"` — QML does not expand `~`, so the full path is required.
 
 - [ ] Create `~/.config/quickshell/sidebar-right/RightSidebar.qml` — 25% screen width (~480px); toggled by `Super + G` and by clicking the GitHub commits pill when nothing is playing
 - [ ] **Section 1 — Contribution Heatmap:** GitHub GraphQL API call using token from `secrets.env`; color intensity follows dynamic accent scale; graceful fallback message if API unavailable
@@ -463,14 +502,14 @@ Phase 1 (base verify)
   └── Phase 2 (SSH + git)
         └── Phase 3 (Hyprland first boot)
               └── Phase 4 (SDDM)
-              └── Phase 5 (font rendering)
-              └── Phase 6 (wallpaper + matugen)   ← accent colors for everything below
-                    └── Phase 7 (per-app theming)
-                    └── Phase 12 (Quickshell bar)  ← colors.qml reads matugen output
+              └── Phase 5 (font rendering)         ← font-rendering.md
+              └── Phase 6 (wallpaper + matugen)    ← matugen-setup.md, wallpaper-change.sh, wallpaper-picker.sh, all matugen templates
+                    └── Phase 7 (per-app theming)  ← kitty.conf, hyprlock.conf, hypridle.conf, zellij-config.kdl, dev-layout.kdl, gtk-3.0-settings.ini
+                    └── Phase 12 (Quickshell bar)  ← colors.qml reads matugen output; cava.config at 12.13
               └── Phase 8 (Flatpak apps)
               └── Phase 9 (Brave)
               └── Phase 10 (dev tools)
-              └── Phase 11 (Chezmoi init)          ← do after Phases 3–10 are stable
+              └── Phase 11 (Chezmoi init)          ← pacman-hooks.md; do after Phases 3–10 are stable
               └── Phase 12 (Quickshell bar)
                     └── Phase 13 (final checks)
 ```
@@ -489,3 +528,6 @@ Phase 1 (base verify)
 | Full software stack and rationale | `setup_plan.md` |
 | System install steps | `installation_plan.md` |
 | Ongoing maintenance | `maintenance.md` |
+| matugen template setup and verification | `matugen-setup.md` |
+| Pacman hooks (sbctl + GRUB fallback) | `pacman-hooks.md` |
+| Font rendering shell steps | `font-rendering.md` |
