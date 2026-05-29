@@ -1192,35 +1192,9 @@ Add your wallpapers here before running the wallpaper switcher. Subdirectories a
 
 ## Step 31 — Chezmoi Initialization
 
-Set up Chezmoi to track your dotfiles.
+Chezmoi is initialized in **Phase 11 of `build_order.md`**, after all configs from Phases 3–10 are stable. Do not initialize it here — your configs are not finalized yet at this point in the install.
 
-```bash
-sudo pacman -S chezmoi
-chezmoi init
-```
-
-**Add your config files:**
-```bash
-chezmoi add ~/.config/hypr/
-chezmoi add ~/.config/kitty/
-chezmoi add ~/.config/rofi/
-chezmoi add ~/.config/quickshell/
-chezmoi add ~/.config/zellij/
-chezmoi add ~/.config/lazygit/
-chezmoi add ~/.config/cava/
-chezmoi add ~/.zshrc
-```
-
-**If you are tracking in a remote repo:**
-```bash
-chezmoi git -- remote add origin git@github.com:YOUR_GITHUB_USERNAME/dotfiles.git
-chezmoi git -- push -u origin main
-```
-
-Add `secrets.env` to `.gitignore` in the Chezmoi repo so the GitHub token is never committed:
-```bash
-echo ".config/quickshell/secrets.env" >> ~/.local/share/chezmoi/.chezmoiignore
-```
+Continue to Step 32.
 
 ---
 
