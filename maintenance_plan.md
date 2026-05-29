@@ -253,7 +253,7 @@ This shows a diff between your current config files and what Chezmoi has tracked
 After a fresh Arch install (following `installation_plan.md`), restore all your dotfiles:
 
 ```bash
-chezmoi init --apply https://github.com/yourusername/dotfiles.git
+chezmoi init --apply https://github.com/YOUR_GITHUB_USERNAME/dotfiles.git
 ```
 
 This pulls your repo and applies every tracked config file to the correct location.
