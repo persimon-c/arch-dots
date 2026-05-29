@@ -407,12 +407,20 @@ curl -H "Authorization: bearer YOUR_TOKEN" \
 │   └── RepoCard.qml
 └── secrets.env             # GitHub token — never commit this
 └── settings/
-    ├── SettingsPanel.qml       # Main floating settings panel
-    ├── SettingsSection.qml     # Reusable collapsible section card
-    ├── SliderControl.qml       # Labeled slider + number
-    ├── ToggleControl.qml       # Labeled toggle switch
-    ├── DropdownControl.qml     # Labeled dropdown
-    └── SettingsApplier.qml     # hyprctl keyword + sed + reload logic
+    ├── SettingsPanel.qml         # Main panel — profile pills + section list
+    ├── SettingsSection.qml       # Reusable collapsible section card
+    ├── SliderControl.qml         # Labeled slider + number
+    ├── ToggleControl.qml         # Labeled toggle switch
+    ├── DropdownControl.qml       # Labeled dropdown
+    ├── SettingsApplier.qml       # hyprctl keyword + sed + reload logic
+    ├── BezierEditor.qml          # Visual curve editor with canvas + preview ball
+    ├── ProfileManager.qml        # Profile pill row + save/switch/delete
+    ├── WindowRulesEditor.qml     # Window rules list + add/edit/delete
+    ├── MonitorSettings.qml       # Monitor resolution/scale/rotation
+    ├── HyprlockSettings.qml      # Lock screen settings
+    ├── SwayNCSettings.qml        # Notification center settings
+    ├── curves.json               # Saved named bezier curves
+    └── profiles.json             # Saved setting profiles
 ```
 
 Keep `secrets.env` in `.gitignore` if the config is tracked in a git repo (Chezmoi will handle this — add it to the ignore list there too).
