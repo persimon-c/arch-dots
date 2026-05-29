@@ -500,7 +500,32 @@ hyprpicker --version
 ## Step 22 — Install NVIDIA Drivers
 
 ```bash
-sudo pacman -S nvidia nvidia-utils nvidia-settings
+sudo pacman -S nvidia-dkms nvidia-utils nvidia-settings
+```
+
+> **Why nvidia-dkms?** The DKMS variant rebuilds the kernel module automatically against any installed kernel. On Arch with a single kernel it makes no functional difference right now, but it's what the Hyprland wiki recommends and protects you if you ever add a second kernel.
+
+> **egl-wayland:** This is a hard dependency of `nvidia-utils` and will be installed automatically — you do not need to install it separately.
+
+**Enable NVIDIA power management services (required for suspend/resume on laptop):**
+```bash
+sudo systemctl enable nvidia-suspend.service
+sudo systemctl enable nvidia-hibernate.service
+sudo systemctl enable nvidia-resume.service
+```
+
+> The Hyprland wiki notes these may already be enabled on Arch by the package install scripts. Run `systemctl status nvidia-suspend` to check — if it shows `enabled`, skip the manual enable.
+
+**Add `NVreg_PreserveVideoMemoryAllocations=1` to GRUB kernel parameters:**
+
+Open `/etc/default/grub` and add it to `GRUB_CMDLINE_LINUX_DEFAULT`:
+```
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nvidia-drm.modeset=1 ibt=off nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+```
+
+Then regenerate:
+```bash
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
 **Blacklist nouveau (open source NVIDIA driver — conflicts with proprietary):**
@@ -529,7 +554,7 @@ reboot
 > Edit GRUB at boot — press `e` on the Arch entry, find the `linux` line, add `nomodeset` temporarily at the end, press `Ctrl+X` to boot. Once in, verify `nvidia-drm.modeset=1` and `ibt=off` are in `/etc/default/grub` and re-run `grub-mkconfig`.  
 >  
 > **If the system boots but Hyprland won't start later:**  
-> Check the WLR_DRM_DEVICES variable — `card1` may not be the AMD card. Run `ls -la /dev/dri/by-path/` and use the stable PCI path instead (see setup_plan.md GPU section).
+> Check the AQ_DRM_DEVICES variable — `card1` may not be the AMD card. Run `ls -la /dev/dri/by-path/` and use the stable PCI path instead (see setup_plan.md GPU section).
 
 > **Error — `nouveau` is still loading despite blacklist:**  
 > Add `nouveau.modeset=0` to GRUB_CMDLINE_LINUX_DEFAULT in `/etc/default/grub` and re-run `grub-mkconfig`.
@@ -566,12 +591,12 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
                fzf zellij \
                pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber \
                pavucontrol bluez bluez-utils blueman ufw \
-               brightnessctl radeontop docker polkit-gnome
+               brightnessctl radeontop docker
 
 yay -S sddm-git hyprlock hypridle awww rofi-wayland swaync \
        cliphist wl-clipboard \
        kitty yazi thunar grimblast quickshell-git \
-       catppuccin-cursors-mocha
+       catppuccin-cursors-mocha hyprpolkitagent
 ```
 
 - `brightnessctl` — required for brightness keybinds (`XF86MonBrightnessUp/Down`)
@@ -651,7 +676,9 @@ Replace `<your-amd-pci-path-here>` with the full path you found with `ls -la /de
 ```bash
 cat > ~/.config/hypr/env.conf << 'EOF'
 # GPU — AMD iGPU as primary display; use stable PCI path, not /dev/dri/card1
-env = WLR_DRM_DEVICES,/dev/dri/by-path/<your-amd-pci-path-here>
+# AQ_DRM_DEVICES is the correct variable for current Hyprland (Aquamarine backend, post-0.41).
+# WLR_DRM_DEVICES is the legacy wlroots variable — no longer used.
+env = AQ_DRM_DEVICES,/dev/dri/by-path/<your-amd-pci-path-here>
 env = LIBVA_DRIVER_NAME,radeonsi
 env = WLR_NO_HARDWARE_CURSORS,1
 
@@ -1032,7 +1059,7 @@ exec-once = bash -c '[ -f ~/.cache/current_wallpaper ] && ~/.config/hypr/scripts
 exec-once = quickshell
 exec-once = hypridle
 exec-once = swaync
-exec-once = /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+exec-once = systemctl --user start hyprpolkitagent
 exec-once = wl-paste --type text --watch cliphist store
 exec-once = wl-paste --type image --watch cliphist store
 EOF
