@@ -362,3 +362,5 @@ These apply across every UI surface:
 | Current wallpaper cache | `~/.cache/current_wallpaper` |
 | Wallpaper directory | `~/wallpapers/` |
 | Chezmoi | `~/.local/share/chezmoi/` |
+| Hyprland settings reference | `hyprland_settings.md` — source of truth for all Hyprland config values |
+| Settings GUI (Quickshell) | `~/.config/quickshell/settings/` — see `settings.md` for full spec |
