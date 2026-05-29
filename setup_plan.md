@@ -191,7 +191,6 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia appname
 |---|---|---|
 | Compositor | Hyprland | Wayland-native tiling, low RAM, smooth animations, active development |
 | Status bar + widgets | Quickshell | QML-based, very high widget flexibility, native match for meloworld aesthetic — built with it |
-| Dock | nwg-dock-hyprland | Quick app access for users transitioning from Windows taskbar |
 | App launcher | Rofi-wayland | More powerful and customizable than Wofi |
 | Notifications | Swaync | Notification center panel, more functional than Dunst/Mako for daily use |
 | Wallpaper | Awww | Supports animated wallpapers and smooth transitions, superset of Hyprpaper |
@@ -464,7 +463,7 @@ sudo pacman -S playerctl
 Quickshell reads playerctl output via a `Process` component and exposes it to the QML UI. The meloworld dotfiles include a working reference implementation of this pattern.
 
 **Taskbar (active windows):**
-`nwg-dock-hyprland` configured to show currently open windows only, autohides until hovered. Appears at the bottom of the screen. Replaces the need for a persistent taskbar while keeping Windows-like app visibility on demand.
+Active window icons are shown in the Quickshell top bar (the App Icons pill). No separate dock.
 
 ---
 
@@ -887,6 +886,7 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 | Virtual machine manager | Docker covers containerization needs |
 | LTS kernel | Standard kernel has better hardware support for this laptop |
 | btrfs | ext4 chosen for performance, simplicity |
+| nwg-dock-hyprland | Not wanted — no dock in this setup |
 | power-profiles-daemon | Conflicts with asusctl — use asusctl for ASUS hardware instead |
 | Paru | yay chosen as AUR helper |
 | Hyprpaper | Awww is a strict superset |
@@ -903,5 +903,4 @@ Exact submap keybinds will be designed post-install once the base workflow is es
 - [Quickshell](https://quickshell.outfoxxed.me)
 - [Antigravity IDE](https://antigravity.google)
 - [Onefetch](https://github.com/o2sh/onefetch)
-- [nwg-dock-hyprland](https://github.com/nwg-piotr/nwg-dock-hyprland)
 - [matugen](https://github.com/InioX/matugen)
