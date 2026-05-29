@@ -8,6 +8,17 @@
 
 These must be done in Windows before anything else.
 
+**Create the bootable USB (do this first):**
+- Download the Arch ISO from https://archlinux.org/download
+- Flash it with balenaEtcher — straightforward, works correctly with Arch ISOs
+- Minimum USB size: 1GB, but 4GB+ recommended
+- Download a few wallpapers in Brave before starting Phase 6 — at least one must be in `~/wallpapers/` before the phase begins
+
+**Verify Windows state before touching disk:**
+- Confirm BitLocker is OFF on both C: and D: — check in Control Panel → BitLocker Drive Encryption. BitLocker-encrypted partitions can prevent shrinking.
+- Confirm C: has enough free space to shrink by 51GB — right-click C: → Properties. If free space is close to 51GB, run Optimize Drives first.
+- Check/update BIOS version now while in Windows — easier here than from Arch later. Check the ASUS support page for FX505DT.
+
 **In Windows (run PowerShell as Administrator):**
 ```powershell
 # Disable hypervisor (required — conflicts with Linux boot)
@@ -16,6 +27,9 @@ bcdedit /set hypervisorlaunchtype off
 # Disable hibernation (required — leaves NTFS dirty, Linux refuses to mount it)
 powercfg /hibernate off
 ```
+
+**Disable Fast Startup** (separate from hibernation — also leaves NTFS partitions dirty):
+Control Panel → Power Options → Choose what the power buttons do → Turn on fast startup → **uncheck it**
 
 **In Disk Management:**
 1. Shrink C: (SSD) by 51200MB → creates 50GB unallocated for Arch root
@@ -1194,7 +1208,7 @@ chezmoi add ~/.zshrc
 
 **If you are tracking in a remote repo:**
 ```bash
-chezmoi git -- remote add origin https://github.com/yourusername/dotfiles.git
+chezmoi git -- remote add origin git@github.com:YOUR_GITHUB_USERNAME/dotfiles.git
 chezmoi git -- push -u origin main
 ```
 
