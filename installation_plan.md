@@ -10,13 +10,12 @@ These must be done in Windows before anything else.
 
 **Create the bootable USB (do this first):**
 - Download the Arch ISO from https://archlinux.org/download
-- Flash it with balenaEtcher — straightforward, works correctly with Arch ISOs
+- Flash it with rufus, GPT (if UEFI bios), DD mode
 - Minimum USB size: 1GB, but 4GB+ recommended
 - Download a few wallpapers in Brave before starting Phase 6 — at least one must be in `~/wallpapers/` before the phase begins
 
 **Verify Windows state before touching disk:**
 - Confirm BitLocker is OFF on both C: and D: — check in Control Panel → BitLocker Drive Encryption. BitLocker-encrypted partitions can prevent shrinking.
-- Confirm C: has enough free space to shrink by 51GB — right-click C: → Properties. If free space is close to 51GB, run Optimize Drives first.
 - Check/update BIOS version now while in Windows — easier here than from Arch later. Check the ASUS support page for FX505DT.
 
 **In Windows (run PowerShell as Administrator):**
@@ -31,8 +30,24 @@ powercfg /hibernate off
 **Disable Fast Startup** (separate from hibernation — also leaves NTFS partitions dirty):
 Control Panel → Power Options → Choose what the power buttons do → Turn on fast startup → **uncheck it**
 
-**In Disk Management:**
-1. Shrink C: (SSD) by 51200MB → creates 50GB unallocated for Arch root
+> **Note — Fast Startup checkbox missing:** If the checkbox does not appear, hibernation is already fully off and Fast Startup is already disabled. This is expected.
+
+**Back up C:\Users to D: before touching any partitions:**
+
+Run in PowerShell as Administrator:
+```powershell
+robocopy C:\Users D:\Backup\Users /E /COPYALL /R:3 /W:5 /LOG:D:\Backup\robocopy_log.txt
+```
+
+After it finishes, verify the backup:
+```powershell
+robocopy C:\Users D:\Backup\Users /E /L
+```
+
+The `/L` flag does a dry run and lists anything missing or different without copying. Skipped locked files during the backup are normal — those are active session files that are not useful in a backup anyway. Check `D:\Backup\robocopy_log.txt` to review what was skipped.
+
+**In Disk Management — HDD only:**
+1. ~~Shrink C: (SSD) — this is now done from the Arch live environment (see Step 4)~~
 2. Shrink D: (HDD) by 641024MB → creates ~627GB unallocated for home + swap
 
 **In BIOS (F2 on boot):**
@@ -108,22 +123,80 @@ You should see:
 - `nvme0n1` — NVMe SSD (~238GB), contains Windows C:
 - `sda` — HDD (~931GB), contains Windows D:
 
-**Do not touch the Windows partitions. Only create new partitions in the unallocated space.**
+**Current partition layout on nvme0n1 (confirmed before install):**
+```
+nvme0n1p1   260MB    EFI System         — do not touch
+nvme0n1p2   16MB     MSR Reserved       — do not touch
+nvme0n1p3   237GB    Windows C: (NTFS)  — will be shrunk
+nvme0n1p4   1.07GB   Recovery           — do not touch
+```
 
-### Partition the SSD (nvme0n1) — Arch root only
+The Windows C: partition occupies the entire SSD with no unallocated space. Shrinking it from Windows Disk Management is blocked by the recovery partition sitting at the end of the disk. The resize is done here from the live environment instead.
 
+This requires two tools in sequence: `ntfsresize` shrinks the NTFS filesystem inside the partition first, then `parted` shrinks the partition boundary to match. **Do not run parted before ntfsresize — resizing the partition without shrinking the filesystem first will corrupt Windows.**
+
+### Step 4a — Shrink the NTFS filesystem on nvme0n1p3
+
+First, run a dry-run check to confirm ntfsresize sees the partition as safe to resize:
+```bash
+ntfsresize --no-action --size 187g /dev/nvme0n1p3
+```
+
+Expected output ends with: `Schedule chkdsk for NTFS consistency check at Windows boot time? This is STRONGLY RECOMMENDED! You can use the /f option of Windows' chkdsk command to check and fix the filesystem after the resize. Are you sure you want to proceed (y/[n])?`
+
+If it instead reports errors or says the volume is inconsistent, **stop** — do not proceed. Boot back into Windows, run `chkdsk C: /f`, reboot, and try again.
+
+If the dry run succeeds, run the actual resize:
+```bash
+ntfsresize --size 187g /dev/nvme0n1p3
+```
+
+Type `y` when prompted.
+
+> **Why 187GB:** The SSD is 238GB. Subtracting 50GB for Arch root and ~1GB buffer leaves ~187GB for Windows C:. This gives Windows ample room — it currently uses ~123GB.
+
+### Step 4b — Shrink the partition boundary on nvme0n1p3
+
+Now shrink the partition itself to match the filesystem. Open parted:
+```bash
+parted /dev/nvme0n1
+```
+
+Inside parted:
+```
+(parted) unit MB
+(parted) print
+```
+
+Note the start position of nvme0n1p3 (will be around 290MB after EFI + MSR). You need it for the next command.
+
+Resize p3 to end at start + 187000MB:
+```
+(parted) resizepart 3 187290MB
+```
+
+> Replace `187290MB` with: the start of p3 (from `print`) + 187000. For example if p3 starts at 290MB, use 187290MB.
+
+Confirm and quit:
+```
+(parted) quit
+```
+
+### Step 4c — Create the Arch root partition (nvme0n1p5)
+
+The freed space now sits between nvme0n1p3 and nvme0n1p4 (recovery). Use cfdisk to create the new partition there:
 ```bash
 cfdisk /dev/nvme0n1
 ```
 
 Inside cfdisk:
-- You'll see the existing partitions: nvme0n1p1 (EFI), p2 (MSR), p3 (Windows C:), and a `Free space` entry of ~50GB
+- You'll see p1 (EFI), p2 (MSR), p3 (Windows C: shrunk), `Free space` (~50GB), p4 (Recovery)
 - Arrow down to the `Free space` entry
 - Select `[ New ]` → accept the default size (entire free space) → Enter
 - Select `[ Write ]` → type `yes` to confirm
 - Select `[ Quit ]`
 
-This creates `nvme0n1p4`.
+This creates `nvme0n1p5`.
 
 ### Partition the HDD (sda) — swap + home
 
@@ -148,17 +221,18 @@ lsblk
 
 Expected:
 ```
-nvme0n1p1   ~100MB   (Windows EFI — existing)
-nvme0n1p2   ~16MB    (Windows MSR — existing)
-nvme0n1p3   ~128GB   (Windows C: — existing)
-nvme0n1p4   50GB     (Arch root — new)
-sda1        300GB    (Windows D: — existing)
+nvme0n1p1   260MB    (Windows EFI — existing)
+nvme0n1p2   16MB     (Windows MSR — existing)
+nvme0n1p3   ~187GB   (Windows C: — shrunk)
+nvme0n1p4   1.07GB   (Windows Recovery — existing, do not touch)
+nvme0n1p5   ~50GB    (Arch root — new)
+sda1        305GB    (Windows D: — existing)
 sda2        4GB      (swap — new)
 sda3        ~627GB   (Arch home — new)
 ```
 
 > **Error — partition table shows wrong sizes or overlaps:**  
-> Select `[ Quit ]` without writing. Re-examine with `lsblk` and `fdisk -l /dev/nvme0n1`. If unallocated space is missing, Windows Disk Management may not have actually committed the shrink — reboot Windows and check.
+> Select `[ Quit ]` without writing. Re-examine with `lsblk` and `fdisk -l /dev/nvme0n1`. If the free space between p3 and p4 is missing, the ntfsresize or parted step may not have committed correctly — recheck Step 4b.
 
 ---
 
@@ -166,7 +240,7 @@ sda3        ~627GB   (Arch home — new)
 
 ```bash
 # Arch root
-mkfs.ext4 /dev/nvme0n1p4
+mkfs.ext4 /dev/nvme0n1p5
 
 # Arch home
 mkfs.ext4 /dev/sda3
@@ -175,6 +249,7 @@ mkfs.ext4 /dev/sda3
 mkswap /dev/sda2
 
 # DO NOT format nvme0n1p1 — that is the shared EFI partition with Windows
+# DO NOT format nvme0n1p4 — that is the Windows Recovery partition
 ```
 
 > **Error — `mkfs.ext4: invalid argument` or similar:**  
@@ -185,7 +260,7 @@ mkswap /dev/sda2
 ## Step 6 — Mount the Partitions
 
 ```bash
-mount /dev/nvme0n1p4 /mnt
+mount /dev/nvme0n1p5 /mnt
 
 mkdir -p /mnt/efi
 mount /dev/nvme0n1p1 /mnt/efi
@@ -1274,7 +1349,7 @@ If a reboot results in a broken system, boot from the Arch USB and:
 
 ```bash
 # Mount your installed system
-mount /dev/nvme0n1p4 /mnt
+mount /dev/nvme0n1p5 /mnt
 mount /dev/nvme0n1p1 /mnt/efi
 mount /dev/sda3 /mnt/home
 swapon /dev/sda2
