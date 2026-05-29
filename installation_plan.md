@@ -569,7 +569,7 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
                brightnessctl radeontop docker
 
 yay -S sddm-git hyprlock hypridle awww rofi-wayland swaync \
-       nwg-dock-hyprland cliphist wl-clipboard \
+       cliphist wl-clipboard \
        kitty yazi thunar grimblast quickshell-git \
        catppuccin-cursors-mocha
 ```
