@@ -90,6 +90,9 @@ bcdedit /set hypervisorlaunchtype off
 powercfg /hibernate off
 ```
 
+**Also disable Fast Startup** — this is separate from hibernation and must be turned off independently. Fast Startup also leaves NTFS partitions in a dirty state, which causes Linux to refuse mounting them:
+Control Panel → Power Options → Choose what the power buttons do → Turn on fast startup → **uncheck it**
+
 ---
 
 ## System Configuration
@@ -244,7 +247,7 @@ DevOps tools (kubectl, helm, terraform, ansible) are **intentionally not install
 |---|---|---|
 | Terminal file manager | Yazi | Rust-based, extremely fast, keyboard-driven, path yanking |
 | GUI file manager | Thunar | Lightweight, drag-and-drop to browser, essential for attaching files |
-| Screenshot | Hyprshot | Wrapper around grim, simplest for Hyprland |
+| Screenshot | grimblast | Wayland-native, wraps grim + slurp for Hyprland-aware region selection; used by all screenshot keybinds |
 | Clipboard | Cliphist + wl-clipboard | Lightweight Wayland-native clipboard history |
 
 ### Applications
