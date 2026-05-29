@@ -146,7 +146,7 @@ Data is fetched **on panel open** and on **manual refresh** via a refresh button
 
 Scanned from the repo root directory on panel open. The widget looks for any folder containing a `.git` directory.
 
-**Repo root directory:** Not yet decided. Recommendation: use `~/dev` as the single root for all repositories — short, clean, conventional. Subdirectories can separate concerns: `~/dev/personal/`, `~/dev/uni/`, etc. Set one variable `repoRoot: "/home/simone/dev"` in the widget config and everything follows. Confirm on first boot.
+**Repo root directory:** Confirmed: `~/dev`. Subdirectories can separate concerns: `~/dev/personal/`, `~/dev/uni/`, etc. Set as `property string repoRoot: "/home/simone/dev"` in the widget config — QML does not expand `~`, so the full path is required.
 
 Each repo is displayed as a card showing:
 
@@ -204,10 +204,10 @@ These are managed by other tools per the main setup plan:
 
 | Decision | Notes |
 |---|---|
-| Right sidebar keybind | Confirmed: `Super + G` |
+| Right sidebar keybind | **Confirmed: `Super + G`** — set in keybinds.md and keybinds.conf |
 | Cava bar color | Static Catppuccin accent or reactive to album art |
-| Repo root directory | Recommended: `~/dev` — confirm on first boot |
-| GitHub username | Configure in widget secrets/config file |
+| Repo root directory | **Confirmed: `~/dev`** — hardcode as `property string repoRoot: "/home/simone/dev"` in QML; QML does not expand `~` |
+| GitHub username | **Must be set before Phase 12** — configure in `~/.config/quickshell/secrets.env` alongside the GitHub token |
 
 ---
 
