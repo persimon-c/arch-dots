@@ -591,7 +591,8 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
                fzf zellij \
                pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber \
                pavucontrol bluez bluez-utils blueman ufw \
-               brightnessctl radeontop docker
+               brightnessctl radeontop docker \
+               qt5-wayland qt6-wayland
 
 yay -S sddm-git hyprlock hypridle awww rofi-wayland swaync \
        cliphist wl-clipboard \
