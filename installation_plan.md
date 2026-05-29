@@ -298,12 +298,13 @@ Set a strong root password. You'll need this to recover from mistakes.
 ## Step 13 — Install Essential Packages
 
 ```bash
-pacman -S grub efibootmgr os-prober ntfs-3g networkmanager sudo git zsh
+pacman -S grub efibootmgr os-prober ntfs-3g networkmanager sudo git zsh curl
 ```
 
 - `ntfs-3g` — required for os-prober to detect the Windows partition
 - `networkmanager` — handles Wi-Fi and ethernet after reboot
 - `efibootmgr` — required by GRUB for UEFI install
+- `curl` — required for GitHub API calls in the right sidebar widget and general use
 
 ---
 
@@ -461,20 +462,24 @@ rm -rf yay
 
 ---
 
-## Step 21b — Install matugen (AUR)
+## Step 21b — Install AUR Essentials
 
-matugen generates dynamic accent palettes from wallpaper images. Install it now via yay since it is needed for the wallpaper switcher later.
+Install AUR packages that are needed early or referenced by later steps.
 
 ```bash
-yay -S matugen
+yay -S matugen lazygit hyprpicker
 ```
 
-Verify it works:
+- `matugen` — generates dynamic accent palettes from wallpaper images; needed by the wallpaper switcher
+- `lazygit` — terminal Git UI used in the Zellij dev layout (`Super + Shift + Z`)
+- `hyprpicker` — Wayland color picker; bound to `Super + C`
+
+Verify each installed correctly:
 ```bash
 matugen --version
+lazygit --version
+hyprpicker --version
 ```
-
-The color output files will be generated later when the wallpaper switcher script is set up. No configuration needed at this stage.
 
 ---
 
@@ -546,12 +551,21 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
                tumbler \
                fzf zellij \
                pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber \
-               pavucontrol bluez bluez-utils blueman ufw
+               pavucontrol bluez bluez-utils blueman ufw \
+               brightnessctl radeontop docker
 
 yay -S sddm-git hyprlock hypridle awww rofi-wayland swaync \
-       nwg-dock-hyprland hyprshot cliphist wl-clipboard \
-       kitty zellij yazi thunar
+       nwg-dock-hyprland cliphist wl-clipboard \
+       kitty yazi thunar grimblast quickshell-git \
+       catppuccin-cursors-mocha
 ```
+
+- `brightnessctl` — required for brightness keybinds (`XF86MonBrightnessUp/Down`)
+- `radeontop` — GPU usage monitor for the Quickshell stats panel; requires a udev rule for non-root access (configured in Step 29)
+- `docker` — container runtime; data directory configured to `/home` in Step 27
+- `grimblast` — screenshot tool used by all screenshot keybinds; wraps `grim` + `slurp` for Hyprland-aware region selection
+- `quickshell-git` — bar and widget system; QML-based
+- `catppuccin-cursors-mocha` — cursor theme set in `hyprland_settings.md`
 
 **Enable services:**
 ```bash
@@ -573,62 +587,444 @@ sudo pacman -S ttf-jetbrains-mono-nerd noto-fonts-emoji noto-fonts-cjk
 
 ---
 
-## Step 26 — Configure Hyprland for AMD+NVIDIA
+## Step 26 — Configure Hyprland (Full Split Config)
 
-Create the Hyprland config directory and start a minimal config:
+This step creates the full Hyprland config using the split file structure from `setup_plan.md` and the decided values from `hyprland_settings.md`. Do not leave the minimal placeholder config in place — replace it entirely now.
 
+**Create the config directory:**
 ```bash
-mkdir -p ~/.config/hypr
-vim ~/.config/hypr/hyprland.conf
+mkdir -p ~/.config/hypr/scripts
+mkdir -p ~/Pictures/screenshots
 ```
 
-Find the stable AMD GPU path first:
+**Find the stable AMD GPU path first:**
 ```bash
 ls -la /dev/dri/by-path/
 ```
 
-Look for a `pci-*` entry that points to a `cardN` device corresponding to the AMD iGPU PCI address (typically the one with a lower PCI bus number). Use that full path.
+Look for the `pci-*` entry pointing to the AMD iGPU (typically the lower PCI bus number). Copy the full path — you'll need it in `env.conf` below.
 
-Minimal working config to get started:
-```ini
-# GPU — use stable PCI path, not /dev/dri/card1
+---
+
+### `~/.config/hypr/hyprland.conf` (entry point)
+
+```bash
+cat > ~/.config/hypr/hyprland.conf << 'EOF'
+source = ~/.config/hypr/env.conf
+source = ~/.config/hypr/colors.conf
+source = ~/.config/hypr/monitor.conf
+source = ~/.config/hypr/input.conf
+source = ~/.config/hypr/decoration.conf
+source = ~/.config/hypr/animations.conf
+source = ~/.config/hypr/layout.conf
+source = ~/.config/hypr/windowrules.conf
+source = ~/.config/hypr/keybinds.conf
+source = ~/.config/hypr/autostart.conf
+EOF
+```
+
+---
+
+### `~/.config/hypr/env.conf`
+
+Replace `<your-amd-pci-path-here>` with the full path you found with `ls -la /dev/dri/by-path/`.
+
+```bash
+cat > ~/.config/hypr/env.conf << 'EOF'
+# GPU — AMD iGPU as primary display; use stable PCI path, not /dev/dri/card1
 env = WLR_DRM_DEVICES,/dev/dri/by-path/<your-amd-pci-path-here>
 env = LIBVA_DRIVER_NAME,radeonsi
 env = WLR_NO_HARDWARE_CURSORS,1
 
-# Basic input
+# NVIDIA PRIME offload — prefix any app with these to run it on the NVIDIA dGPU
+env = __NV_PRIME_RENDER_OFFLOAD,1
+env = __NV_PRIME_RENDER_OFFLOAD_PROVIDER,NVIDIA-G0
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+env = __VK_LAYER_NV_optimus,NVIDIA_only
+
+# Wayland session
+env = WAYLAND_DISPLAY,wayland-0
+env = XDG_SESSION_TYPE,wayland
+env = XDG_SESSION_DESKTOP,Hyprland
+env = XDG_CURRENT_DESKTOP,Hyprland
+
+# Qt Wayland
+env = QT_QPA_PLATFORM,wayland
+env = QT_AUTO_SCREEN_SCALE_FACTOR,1
+env = QT_WAYLAND_DISABLE_WINDOWDECORATION,1
+
+# GTK / SDL
+env = GDK_BACKEND,wayland,x11
+env = SDL_VIDEODRIVER,wayland
+
+# Cursor
+env = XCURSOR_SIZE,24
+env = XCURSOR_THEME,Catppuccin-Mocha-Dark
+EOF
+```
+
+---
+
+### `~/.config/hypr/colors.conf`
+
+This file is generated and overwritten by matugen on each wallpaper change. Create it now with Lavender as the fallback accent so Hyprland has valid colors before the first wallpaper is processed.
+
+```bash
+cat > ~/.config/hypr/colors.conf << 'EOF'
+# Generated by matugen on wallpaper change.
+# Fallback: Catppuccin Mocha Lavender accent + Flamingo secondary.
+# Do not edit manually — changes will be overwritten on next wallpaper change.
+
+$accent    = rgb(b4befe)
+$accentAlt = rgb(f2cdcd)
+$inactive  = rgb(45475a)
+EOF
+```
+
+---
+
+### `~/.config/hypr/monitor.conf`
+
+```bash
+cat > ~/.config/hypr/monitor.conf << 'EOF'
+# 1920x1080 @ 60Hz, single monitor, no scaling
+monitor = , 1920x1080@60, 0x0, 1
+EOF
+```
+
+---
+
+### `~/.config/hypr/input.conf`
+
+```bash
+cat > ~/.config/hypr/input.conf << 'EOF'
 input {
     kb_layout = us
+    kb_variant =
+    kb_model =
+    kb_options =
+    kb_rules =
+
+    follow_mouse = 1
+    mouse_refocus = true
+
+    sensitivity = 0
+    accel_profile = flat
+
     touchpad {
-        natural_scroll = false
+        natural_scroll = true
         tap-to-click = true
+        tap-to-drag = true
+        drag_lock = false
         disable_while_typing = true
+        scroll_factor = 1.0
+        clickfinger_behavior = false
     }
-    sensitivity = 0.5
 }
 
-# Visuals
+gestures {
+    workspace_swipe = true
+    workspace_swipe_fingers = 3
+    workspace_swipe_distance = 300
+    workspace_swipe_invert = true
+    workspace_swipe_min_speed_to_force = 30
+    workspace_swipe_cancel_ratio = 0.5
+    workspace_swipe_create_new = false
+}
+EOF
+```
+
+---
+
+### `~/.config/hypr/decoration.conf`
+
+```bash
+cat > ~/.config/hypr/decoration.conf << 'EOF'
 decoration {
     rounding = 12
+
+    active_opacity = 0.92
+    inactive_opacity = 0.80
+    fullscreen_opacity = 1.0
+
     blur {
         enabled = true
         size = 8
         passes = 3
         new_optimizations = true
+        xray = false
+        ignore_opacity = false
     }
-    active_opacity = 0.92
-    inactive_opacity = 0.85
+
     drop_shadow = true
+    shadow_range = 12
+    shadow_render_power = 2
+    shadow_offset = 2 4
+    col.shadow = rgba(11111b99)
+    col.shadow_inactive = rgba(11111b55)
+}
+EOF
+```
+
+---
+
+### `~/.config/hypr/animations.conf`
+
+```bash
+cat > ~/.config/hypr/animations.conf << 'EOF'
+animations {
+    enabled = true
+
+    bezier = floaty, 0.05, 0.9, 0.1, 1.05
+    bezier = smoothOut, 0.36, 0, 0.66, -0.56
+    bezier = smoothIn, 0.25, 1, 0.5, 1
+
+    animation = windows, 1, 5, smoothIn, fade
+    animation = windowsOut, 1, 5, smoothOut, fade
+    animation = windowsMove, 1, 4, floaty
+    animation = workspaces, 1, 6, floaty, slide
+    animation = fadeIn, 1, 5, smoothIn
+    animation = fadeOut, 1, 5, smoothOut
+    animation = border, 1, 8, default
+    animation = borderangle, 1, 30, default, loop
+}
+EOF
+```
+
+---
+
+### `~/.config/hypr/layout.conf`
+
+```bash
+cat > ~/.config/hypr/layout.conf << 'EOF'
+general {
+    gaps_in = 5
+    gaps_out = 10
+    border_size = 2
+    layout = dwindle
+
+    col.active_border = rgba(b4befeff) rgba(f2cdcdff) 45deg
+    col.inactive_border = rgba(45475aaa)
+
+    resize_on_border = true
+    extend_border_grab_area = 10
 }
 
-# Keybinds (minimal — add more from setup_plan.md)
-$mod = SUPER
-bind = $mod, Return, exec, kitty
-bind = $mod, W, killactive
-bind = $mod, Space, exec, rofi -show drun
-bind = $mod, F, fullscreen
-bind = $mod, L, exec, hyprlock
+dwindle {
+    pseudotile = true
+    preserve_split = true
+    smart_split = false
+    smart_resizing = true
+}
+
+binds {
+    allow_workspace_cycles = true
+    workspace_back_and_forth = true
+}
+
+misc {
+    disable_hyprland_logo = true
+    disable_splash_rendering = true
+    mouse_move_enables_dpms = true
+    key_press_enables_dpms = true
+    animate_manual_resizes = true
+    animate_mouse_windowdrag = true
+    enable_swallow = true
+    swallow_regex = ^(kitty)$
+    focus_on_activate = false
+    vfr = true
+    vrr = 0
+}
+EOF
 ```
+
+---
+
+### `~/.config/hypr/windowrules.conf`
+
+```bash
+cat > ~/.config/hypr/windowrules.conf << 'EOF'
+# Floating windows
+windowrulev2 = float, class:^(pavucontrol)$
+windowrulev2 = center, class:^(pavucontrol)$
+windowrulev2 = float, class:^(blueman-manager)$
+windowrulev2 = center, class:^(blueman-manager)$
+windowrulev2 = float, class:^(thunar)$, title:^(File Operation)
+windowrulev2 = float, class:^(org.gnome.Calculator)$
+windowrulev2 = center, class:^(org.gnome.Calculator)$
+
+# Workspace assignments
+windowrulev2 = workspace 2, class:^(brave-browser)$
+windowrulev2 = workspace 4, class:^(discord)$
+EOF
+```
+
+---
+
+### `~/.config/hypr/keybinds.conf`
+
+```bash
+cat > ~/.config/hypr/keybinds.conf << 'EOF'
+$mod = SUPER
+
+# --- Window Management ---
+bind = $mod, Q, killactive
+bind = $mod, F, fullscreen
+bind = $mod SHIFT, F, togglefloating
+bind = $mod, P, pseudo
+
+bind = $mod, Up, movefocus, u
+bind = $mod, Down, movefocus, d
+bind = $mod, Left, movefocus, l
+bind = $mod, Right, movefocus, r
+
+bind = $mod SHIFT, Up, movewindow, u
+bind = $mod SHIFT, Down, movewindow, d
+bind = $mod SHIFT, Left, movewindow, l
+bind = $mod SHIFT, Right, movewindow, r
+
+binde = $mod CTRL, Up, resizeactive, 0 -20
+binde = $mod CTRL, Down, resizeactive, 0 20
+binde = $mod CTRL, Left, resizeactive, -20 0
+binde = $mod CTRL, Right, resizeactive, 20 0
+
+bind = $mod, Tab, cyclenext
+bind = $mod SHIFT, Tab, cyclenext, prev
+bind = ALT, Tab, cyclenext
+bind = ALT SHIFT, Tab, cyclenext, prev
+
+# --- Applications ---
+bind = $mod, Return, exec, kitty
+bind = $mod, Space, exec, rofi -show drun
+bind = $mod, B, exec, brave
+bind = $mod, A, exec, antigravity
+bind = $mod, S, exec, subl
+bind = $mod, T, exec, thunar
+bind = $mod, D, exec, discord
+bind = $mod, V, exec, code
+bind = $mod SHIFT, V, exec, cliphist list | rofi -dmenu | cliphist decode | wl-copy
+bind = $mod, W, exec, ~/.config/rofi/wallpaper-picker.sh
+bind = $mod, N, exec, swaync-client -t
+bind = $mod, G, exec, quickshell ipc call toggleRightSidebar
+bind = $mod, E, exec, kitty -e yazi
+bind = $mod, Z, exec, zellij
+bind = $mod SHIFT, Z, exec, zellij --layout ~/.config/zellij/layouts/dev-layout.kdl
+bind = $mod, C, exec, hyprpicker -a && notify-send "Color picked" "$(wl-paste)"
+
+# --- Workspaces ---
+bind = $mod, 1, workspace, 1
+bind = $mod, 2, workspace, 2
+bind = $mod, 3, workspace, 3
+bind = $mod, 4, workspace, 4
+bind = $mod, 5, workspace, 5
+bind = $mod, 6, workspace, 6
+bind = $mod, 7, workspace, 7
+bind = $mod, 8, workspace, 8
+bind = $mod, 9, workspace, 9
+
+bind = $mod SHIFT, 1, movetoworkspace, 1
+bind = $mod SHIFT, 2, movetoworkspace, 2
+bind = $mod SHIFT, 3, movetoworkspace, 3
+bind = $mod SHIFT, 4, movetoworkspace, 4
+bind = $mod SHIFT, 5, movetoworkspace, 5
+bind = $mod SHIFT, 6, movetoworkspace, 6
+bind = $mod SHIFT, 7, movetoworkspace, 7
+bind = $mod SHIFT, 8, movetoworkspace, 8
+bind = $mod SHIFT, 9, movetoworkspace, 9
+
+bind = $mod, mouse_up, workspace, e+1
+bind = $mod, mouse_down, workspace, e-1
+
+# --- Screenshots ---
+bind = , Print, exec, grimblast save screen ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
+bind = $mod, Print, exec, grimblast save area ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
+
+# Screenshot submap
+bind = $mod SHIFT, Print, submap, screenshot
+
+submap = screenshot
+bind = , F, exec, grimblast save screen ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
+bind = , F, submap, reset
+bind = , R, exec, grimblast save area ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
+bind = , R, submap, reset
+bind = , W, exec, grimblast save active ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
+bind = , W, submap, reset
+bind = , C, exec, grimblast copy area
+bind = , C, submap, reset
+bind = , escape, submap, reset
+submap = reset
+
+# --- Media and Audio ---
+binde = , XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+
+binde = , XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bind = , XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+bind = , XF86AudioPlay, exec, playerctl play-pause
+bind = , XF86AudioNext, exec, playerctl next
+bind = , XF86AudioPrev, exec, playerctl previous
+bind = , XF86AudioStop, exec, playerctl stop
+
+# --- Brightness ---
+binde = , XF86MonBrightnessUp, exec, brightnessctl set 5%+
+binde = , XF86MonBrightnessDown, exec, brightnessctl set 5%-
+
+# --- System ---
+bind = $mod, L, exec, hyprlock
+bind = $mod SHIFT, R, exec, hyprctl reload
+bind = $mod SHIFT, Q, exec, quickshell --reload
+bind = $mod SHIFT, C, exec, quickshell ipc call toggleSettings
+
+# System submap
+bind = $mod SHIFT, S, submap, system
+
+submap = system
+bind = , L, exec, hyprlock
+bind = , L, submap, reset
+bind = , S, exec, systemctl suspend
+bind = , S, submap, reset
+bind = , R, exec, systemctl reboot
+bind = , R, submap, reset
+bind = , Q, exec, systemctl poweroff
+bind = , Q, submap, reset
+bind = , E, exit
+bind = , escape, submap, reset
+submap = reset
+
+# Resize submap
+bind = $mod, R, submap, resize
+
+submap = resize
+binde = , right, resizeactive, 20 0
+binde = , left, resizeactive, -20 0
+binde = , down, resizeactive, 0 20
+binde = , up, resizeactive, 0 -20
+bind = , escape, submap, reset
+submap = reset
+EOF
+```
+
+---
+
+### `~/.config/hypr/autostart.conf`
+
+```bash
+cat > ~/.config/hypr/autostart.conf << 'EOF'
+exec-once = awww-daemon
+exec-once = ~/.config/hypr/scripts/wallpaper-change.sh ~/.cache/current_wallpaper
+exec-once = quickshell
+exec-once = hypridle
+exec-once = swaync
+exec-once = /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+exec-once = wl-paste --type text --watch cliphist store
+exec-once = wl-paste --type image --watch cliphist store
+EOF
+```
+
+**Test the config before doing anything else:**
+```bash
+Hyprland
+```
+
+If Hyprland starts and renders correctly, exit and continue. If it fails, check `journalctl --user -xe` for errors.
 
 ---
 
@@ -646,15 +1042,15 @@ sudo systemctl enable --now paccache.timer
 
 This automatically keeps only the 3 most recent versions of each package and removes the rest, weekly.
 
-**2. Move Docker data root to /home:**
+**2. Configure Docker data root to /home:**
 
-Docker images, containers, and volumes are stored at `/var/lib/docker/` by default — on root. A single image can be 1–3GB and they accumulate fast. Move the data root to your 627GB home partition:
+Docker was installed in Step 24. Before pulling any images, move its data root to your 627GB home partition so images, containers, and volumes don't land on the 50GB root.
 
 ```bash
 sudo mkdir -p /home/docker-data
 ```
 
-Create or edit the Docker daemon config:
+Create the Docker daemon config:
 ```bash
 sudo vim /etc/docker/daemon.json
 ```
@@ -669,10 +1065,10 @@ Add:
 Then enable and start Docker:
 ```bash
 sudo systemctl enable --now docker
-sudo systemctl restart docker
+sudo usermod -aG docker simone
 ```
 
-Verify the data root moved:
+Log out and back in for the group change to take effect, then verify:
 ```bash
 docker info | grep "Docker Root Dir"
 # Should show: Docker Root Dir: /home/docker-data
@@ -682,7 +1078,134 @@ docker info | grep "Docker Root Dir"
 
 ---
 
-## Step 28 — Post-Install: Secure Boot Signing (After Everything Works)
+## Step 28 — zsh Setup
+
+Configure zsh with Zinit plugin manager, plugins, starship prompt, and fzf keybindings.
+
+**Install Zinit:**
+```bash
+bash -c "$(curl --fail --show-error --silent --location https://raw.githubusercontent.com/zdharma-continuum/zinit/HEAD/scripts/install.sh)"
+```
+
+**Install starship prompt:**
+```bash
+curl -sS https://starship.rs/install.sh | sh
+```
+
+**Configure `~/.zshrc`:**
+```bash
+cat > ~/.zshrc << 'EOF'
+# Zinit
+source ~/.local/share/zinit/zinit.git/zinit.zsh
+
+# Plugins
+zinit light zsh-users/zsh-autosuggestions
+zinit light zsh-users/zsh-syntax-highlighting
+zinit light zsh-users/zsh-completions
+
+# fzf keybindings — Ctrl+R for fuzzy history, Ctrl+T for fuzzy file search
+source /usr/share/fzf/key-bindings.zsh
+source /usr/share/fzf/completion.zsh
+
+# Starship prompt
+eval "$(starship init zsh)"
+
+# onefetch on cd into git repos (skips large repos)
+function chpwd() {
+    if git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+        local obj_count=$(git count-objects | awk '{print $1}')
+        if [[ $obj_count -lt 10000 ]]; then
+            onefetch
+        fi
+    fi
+}
+
+# History
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE=~/.zsh_history
+setopt SHARE_HISTORY
+setopt HIST_IGNORE_DUPS
+EOF
+```
+
+**Install onefetch (used in the chpwd hook above):**
+```bash
+yay -S onefetch
+```
+
+Reload zsh:
+```bash
+source ~/.zshrc
+```
+
+---
+
+## Step 29 — radeontop udev Rule
+
+`radeontop` (installed in Step 24) requires a udev rule for non-root access. Without this, the GPU gauge in the Quickshell stats panel will silently show nothing.
+
+```bash
+echo 'SUBSYSTEM=="drm", ACTION=="add", GROUP="video", MODE="0660"' | sudo tee /etc/udev/rules.d/99-drm.rules
+sudo udevadm control --reload
+sudo udevadm trigger
+sudo usermod -aG video simone
+```
+
+Log out and back in for the group change to take effect. Verify:
+```bash
+radeontop -d -
+```
+
+You should see GPU load data without sudo.
+
+---
+
+## Step 30 — Wallpaper Directory
+
+```bash
+mkdir -p ~/wallpapers
+```
+
+Add your wallpapers here before running the wallpaper switcher. Subdirectories are fine (e.g. `~/wallpapers/day/`, `~/wallpapers/night/`). The wallpaper switcher script (`Super + W`) scans this directory.
+
+---
+
+## Step 31 — Chezmoi Initialization
+
+Set up Chezmoi to track your dotfiles.
+
+```bash
+sudo pacman -S chezmoi
+chezmoi init
+```
+
+**Add your config files:**
+```bash
+chezmoi add ~/.config/hypr/
+chezmoi add ~/.config/kitty/
+chezmoi add ~/.config/rofi/
+chezmoi add ~/.config/quickshell/
+chezmoi add ~/.config/zellij/
+chezmoi add ~/.config/lazygit/
+chezmoi add ~/.config/cava/
+chezmoi add ~/.zshrc
+```
+
+**If you are tracking in a remote repo:**
+```bash
+chezmoi git -- remote add origin https://github.com/yourusername/dotfiles.git
+chezmoi git -- push -u origin main
+```
+
+Add `secrets.env` to `.gitignore` in the Chezmoi repo so the GitHub token is never committed:
+```bash
+echo ".config/quickshell/secrets.env" >> ~/.local/share/chezmoi/.chezmoiignore
+```
+
+---
+
+## Step 32 — Post-Install: Secure Boot Signing (After Everything Works)
 
 Do this only after confirming Arch boots correctly and all hardware works.
 
@@ -712,9 +1235,9 @@ Then re-enable Secure Boot in BIOS. Both Windows and Arch will boot normally.
 | Black screen after NVIDIA install | No display after reboot | See Step 22 error section |
 | Windows missing from GRUB | Only Arch in boot menu | Reboot without USB, re-run grub-mkconfig |
 | matugen colors not loading | Accent stays at Lavender fallback | Run `matugen image ~/wallpapers/yourwallpaper.jpg` manually to generate ~/.config/matugen/colors.sh |
-| radeontop permission denied | GPU gauge shows nothing in Quickshell | Add udev rule and add user to video group — see setup_plan.md radeontop note |
-| fzf keybinds not working in zsh | Ctrl+R still uses default history | Add `source /usr/share/fzf/key-bindings.zsh` to .zshrc |
-| `card1` not stable | Hyprland fails to start with wrong GPU | Use `/dev/dri/by-path/` path instead |
+| radeontop permission denied | GPU gauge shows nothing in Quickshell | See Step 29 — udev rule + video group |
+| fzf keybinds not working in zsh | Ctrl+R still uses default history | Verify `source /usr/share/fzf/key-bindings.zsh` is in .zshrc |
+| `card1` not stable | Hyprland fails to start with wrong GPU | Use `/dev/dri/by-path/` path instead — see Step 26 |
 | Unplugged battery causes black screen | Screen goes dark when charger removed | Add `iommu=pt` to GRUB kernel parameters |
 | asusd won't start | Fan control unavailable | Check `modinfo asus_wmi`, verify kernel module is present |
 | Nouveau conflicts with NVIDIA | Intermittent crashes or boot failures | Blacklist nouveau + add `nouveau.modeset=0` kernel param |
