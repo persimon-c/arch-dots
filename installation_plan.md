@@ -592,7 +592,7 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
                pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber \
                pavucontrol bluez bluez-utils blueman ufw \
                brightnessctl radeontop docker \
-               qt5-wayland qt6-wayland
+               qt5-wayland qt6-wayland udiskie
 
 yay -S sddm-git hyprlock hypridle awww rofi-wayland swaync \
        cliphist wl-clipboard \
@@ -1060,6 +1060,7 @@ exec-once = bash -c '[ -f ~/.cache/current_wallpaper ] && ~/.config/hypr/scripts
 exec-once = quickshell
 exec-once = hypridle
 exec-once = swaync
+exec-once = udiskie --tray
 exec-once = systemctl --user start hyprpolkitagent
 exec-once = wl-paste --type text --watch cliphist store
 exec-once = wl-paste --type image --watch cliphist store
