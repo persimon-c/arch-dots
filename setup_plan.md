@@ -131,7 +131,11 @@ Run Hyprland on the AMD iGPU by default. Use the NVIDIA dGPU for GPU-intensive t
 sudo pacman -S mesa vulkan-radeon libva-mesa-driver
 
 # NVIDIA (discrete, for offload)
-sudo pacman -S nvidia nvidia-utils nvidia-settings
+# nvidia-dkms is preferred over nvidia on Arch — it rebuilds against any installed kernel automatically.
+# nvidia-open-dkms (open-source kernel modules, same proprietary userspace) is an alternative
+# recommended for Turing/Ampere+ cards, but GTX 1650 (Turing) works fine with either.
+# egl-wayland is a hard dependency of nvidia-utils and will be installed automatically — no need to add it explicitly.
+sudo pacman -S nvidia-dkms nvidia-utils nvidia-settings
 
 # Add NVIDIA modules to initramfs
 # Edit /etc/mkinitcpio.conf:
@@ -148,16 +152,36 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 ### Hyprland Environment Variables
 
 ```bash
-# ~/.config/hypr/hyprland.conf
+# ~/.config/hypr/env.conf
 # Do NOT hardcode /dev/dri/card1 — device numbering is not stable across boots.
 # After first boot, find the stable AMD GPU path:
 #   ls -la /dev/dri/by-path/
 # Look for the entry pointing to a cardN device on the AMD PCI address (will contain "amd" or match the iGPU PCI slot).
 # Use that full /dev/dri/by-path/... symlink as the value instead.
-env = WLR_DRM_DEVICES,/dev/dri/by-path/<amd-pci-path-here>
+#
+# AQ_DRM_DEVICES is the correct variable for current Hyprland (Aquamarine backend, post-0.41).
+# WLR_DRM_DEVICES is the legacy wlroots variable — no longer used.
+env = AQ_DRM_DEVICES,/dev/dri/by-path/<amd-pci-path-here>
 env = LIBVA_DRIVER_NAME,radeonsi
 env = WLR_NO_HARDWARE_CURSORS,1
 ```
+
+### Suspend/Resume (Required for laptop use)
+
+Without this, waking from suspend can cause a black screen or crash.
+
+```bash
+# Add to GRUB kernel parameters in /etc/default/grub:
+# GRUB_CMDLINE_LINUX_DEFAULT="... nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+
+# Enable NVIDIA power management services
+sudo systemctl enable nvidia-suspend.service
+sudo systemctl enable nvidia-hibernate.service
+sudo systemctl enable nvidia-resume.service
+```
+
+> **Note:** The Hyprland wiki says these steps are already done for you on Arch Linux — the services may be enabled automatically by the nvidia-dkms package. Verify with `systemctl status nvidia-suspend` after install. If they're already enabled, skip the manual enable commands.
 
 ### PRIME Offload (Running apps on NVIDIA)
 
