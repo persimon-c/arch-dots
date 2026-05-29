@@ -139,6 +139,7 @@ Add `brightnessctl` to package list — `sudo pacman -S brightnessctl`.
 | `Super + L` | Lock screen (hyprlock) — also available inside System submap |
 | `Super + Shift + R` | Reload Hyprland config |
 | `Super + Shift + Q` | Quickshell reload |
+| `Super + Shift + C` | Settings panel (Quickshell) |
 | `Super + Shift + S` | Enter System submap (suspend / reboot / shutdown / exit Hyprland) |
 
 ---
