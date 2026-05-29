@@ -271,7 +271,7 @@ hwclock --systohc
 ```bash
 # Edit /etc/locale.gen and uncomment: en_US.UTF-8 UTF-8
 vim /etc/locale.gen
-# Find the line, remove the leading #, save (Ctrl+O, Enter, Ctrl+X)
+# Find the line, remove the leading #, save and quit with :wq
 
 locale-gen
 
@@ -566,7 +566,7 @@ sudo pacman -S hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
                fzf zellij \
                pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber \
                pavucontrol bluez bluez-utils blueman ufw \
-               brightnessctl radeontop docker
+               brightnessctl radeontop docker polkit-gnome
 
 yay -S sddm-git hyprlock hypridle awww rofi-wayland swaync \
        cliphist wl-clipboard \
@@ -589,6 +589,11 @@ sudo ufw enable
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo systemctl enable ufw
+```
+
+**Enable PipeWire as a user service (required for audio to work after login):**
+```bash
+systemctl --user enable pipewire pipewire-pulse wireplumber
 ```
 
 ---
@@ -1023,7 +1028,7 @@ EOF
 ```bash
 cat > ~/.config/hypr/autostart.conf << 'EOF'
 exec-once = awww-daemon
-exec-once = ~/.config/hypr/scripts/wallpaper-change.sh ~/.cache/current_wallpaper
+exec-once = bash -c '[ -f ~/.cache/current_wallpaper ] && ~/.config/hypr/scripts/wallpaper-change.sh "$(cat ~/.cache/current_wallpaper)"'
 exec-once = quickshell
 exec-once = hypridle
 exec-once = swaync
@@ -1106,6 +1111,11 @@ bash -c "$(curl --fail --show-error --silent --location https://raw.githubuserco
 curl -sS https://starship.rs/install.sh | sh
 ```
 
+**Install onefetch (used in the chpwd hook below):**
+```bash
+yay -S onefetch
+```
+
 **Configure `~/.zshrc`:**
 ```bash
 cat > ~/.zshrc << 'EOF'
@@ -1141,11 +1151,6 @@ HISTFILE=~/.zsh_history
 setopt SHARE_HISTORY
 setopt HIST_IGNORE_DUPS
 EOF
-```
-
-**Install onefetch (used in the chpwd hook above):**
-```bash
-yay -S onefetch
 ```
 
 Reload zsh:
