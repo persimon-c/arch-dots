@@ -322,7 +322,7 @@ Do this once all config files from Phases 3–10 are stable and you're happy wit
 - [ ] Create a remote repo on GitHub (name it `dotfiles` or similar)
 - [ ] Push:
   ```bash
-  chezmoi git -- remote add origin git@github.com:yourusername/dotfiles.git
+  chezmoi git -- remote add origin git@github.com:YOUR_GITHUB_USERNAME/dotfiles.git
   chezmoi git -- push -u origin main
   ```
 - [ ] Verify the repo on GitHub looks correct and `secrets.env` is absent
@@ -527,7 +527,7 @@ Phase 1 (base verify)
 | Settings panel spec | `settings.md` |
 | Full software stack and rationale | `setup_plan.md` |
 | System install steps | `installation_plan.md` |
-| Ongoing maintenance | `maintenance.md` |
+| Ongoing maintenance | `maintenance_plan.md` |
 | matugen template setup and verification | `matugen-setup.md` |
 | Pacman hooks (sbctl + GRUB fallback) | `pacman-hooks.md` |
 | Font rendering shell steps | `font-rendering.md` |
