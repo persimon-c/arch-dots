@@ -17,6 +17,10 @@ Ongoing maintenance guide for the Arch Linux / Hyprland setup on the ASUS TUF Ga
 | Check home partition usage | Monthly | `df -h /home` |
 | Verify Secure Boot signatures valid | After kernel/GRUB update | `sudo sbctl verify` |
 | Rotate GitHub personal access token | Every 90 days (or per your token expiry) | GitHub → Settings → Developer Settings → Tokens |
+| Verify hibernate + Fast Startup off (Windows) | Monthly | `powercfg /availablesleepstates` |
+| Windows filesystem check | Monthly | `chkdsk C: /scan` |
+| Windows drive health | Monthly | `wmic diskdrive get status,model,size` |
+| Windows event log check | Monthly | `Get-EventLog -LogName System -EntryType Error -Newest 20` |
 
 ---
 
@@ -757,6 +761,67 @@ With 8GB RAM, keep an eye on usage if running Docker containers and a browser si
 
 ---
 
+## Windows Maintenance (Dual Boot)
+
+### Before Every Shutdown Into Arch
+
+Windows must be fully shut down — not hibernated, not using Fast Startup. Both leave NTFS partitions in a dirty state that Linux cannot safely mount.
+
+Verify these are permanently off:
+
+```powershell
+powercfg /availablesleepstates
+```
+
+Expected output must show:
+```
+Hibernate       Hibernation has not been enabled.
+Fast Startup    Hibernation is not available.
+```
+
+If hibernate is on, disable it:
+```powershell
+powercfg /hibernate off
+```
+
+Fast Startup is automatically disabled when hibernate is off.
+
+### Periodic Disk Health Check (Monthly)
+
+```powershell
+# Check physical drive status
+wmic diskdrive get status,model,size
+
+# Check filesystem integrity (read-only, no changes)
+chkdsk C: /scan
+
+# Check for hardware errors in event log
+Get-EventLog -LogName System -EntryType Error -Newest 20
+```
+
+All drives should report `OK`. chkdsk should report "no problems found" and 0 bad sectors.
+
+### Performance Baseline (for comparison after issues)
+
+Run this to get a full performance snapshot:
+
+```powershell
+winsat formal
+```
+
+Expected baseline for this hardware (Ryzen 5 3550H, GTX 1650, TS256GMTE110S NVMe):
+
+| Metric | Expected |
+|---|---|
+| SSD Sequential 64.0 Read | ~1,500–1,600 MB/s |
+| SSD Random 16.0 Read | ~400–450 MB/s |
+| Memory Performance | ~14,000–16,000 MB/s |
+| CPU AES256 Encryption (multicore) | ~5,000–6,000 MB/s |
+
+If scores drop significantly below these values, investigate disk health or thermal throttling.
+
+---
+
 ## Recovery Checklist
 
 If a system update leaves things broken and you need to recover quickly:
@@ -821,4 +886,20 @@ du -sh /var/log/journal/
 
 # 10. Verify Chezmoi is up to date
 chezmoi diff   # should show nothing if you've been committing
+```
+
+**From Windows (run occasionally):**
+
+```powershell
+# Confirm hibernate and Fast Startup are still off
+powercfg /availablesleepstates
+
+# Check filesystem integrity
+chkdsk C: /scan
+
+# Check drive health
+wmic diskdrive get status,model,size
+
+# Check for hardware errors
+Get-EventLog -LogName System -EntryType Error -Newest 20
 ```
