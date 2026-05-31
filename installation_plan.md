@@ -1361,3 +1361,147 @@ arch-chroot /mnt
 ```
 
 This is your recovery path for almost any post-install problem.
+
+
+
+
+
+
+
+----------------------------------------------------------------------------
+
+
+POST INSTALLATION FIXES MADE:
+
+# Installation Plan — Patch Document
+
+Corrections and additions based on the Step 32 (Secure Boot) session.
+
+---
+
+## Step 4 — Partition Resize: Boot Windows After Resizing
+
+**Addition to Step 4c**, after creating nvme0n1p5:
+
+After completing the partition resize (ntfsresize + parted), boot into Windows **before** proceeding with Arch installation. Windows will run a consistency check on the NTFS filesystem on the first boot. Let it complete.
+
+If you skip this step, the NTFS boot sector may retain an incorrect sector count from the resize, causing Windows to show "Unmountable Boot Volume" later.
+
+> **If Windows shows "Unmountable Boot Volume" after the fact:**
+> Boot the Arch USB and run:
+> ```bash
+> ntfsfix /dev/nvme0n1p3
+> ```
+> ntfsfix will detect and rewrite the corrupt boot sector (wrong sector count), repair the MFT, and mark the volume clean. Then remove the USB and reboot into Windows. Windows will run its own chkdsk on first boot — let it finish.
+>
+> Note: Windows recovery `chkdsk /f` will not work if the partition shows as RAW. ntfsfix from Linux is the correct tool in that state. `blkid /dev/nvme0n1p3` showing `TYPE="ntfs"` confirms the data is intact even when Windows shows RAW.
+
+---
+
+## Step 32 — Secure Boot Signing: Corrected Procedure
+
+The original Step 32 is incorrect. Replace it entirely with the following.
+
+### Why the original fails
+
+Arch's GRUB package (`grub 2:2.14-1`) has the shim lock verifier compiled in. When Secure Boot is enabled, GRUB checks for shim protocols and refuses to load the kernel if they are absent. The original `grub-install` command does not disable this, causing:
+
+```
+error: kern/efi/sb.c:shim_lock_verifier_init:177:prohibited by secure boot policy.
+Entering rescue mode...
+grub rescue>
+```
+
+Additionally, Arch's GRUB binary has no SBAT section by default. Shim 15.3+ refuses to launch EFI binaries without SBAT, so adding shim to the boot chain without addressing SBAT also fails.
+
+The fix is `--disable-shim-lock` in the grub-install command, which is the documented Arch Wiki approach for use with sbctl (custom keys, no shim).
+
+### Corrected Step 32
+
+Do this only after confirming Arch boots correctly and all hardware works.
+
+**1. Install sbctl:**
+```bash
+sudo pacman -S sbctl
+```
+
+**2. Enter BIOS Setup Mode:**
+
+Reboot → F2 → Security → Secure Boot → enable Secure Boot control (to reveal Key Management) → Key Management → Delete All Secure Boot Keys / Reset to Setup Mode → **disable Secure Boot again** → Save & Exit.
+
+Boot back into Arch and confirm Setup Mode is active:
+```bash
+sudo sbctl status
+# Setup Mode: ✓ Enabled
+# Secure Boot: ✗ Disabled
+```
+
+**3. Create and enroll keys:**
+```bash
+sudo sbctl create-keys
+sudo sbctl enroll-keys --microsoft
+```
+
+**4. Reinstall GRUB with shim lock disabled:**
+```bash
+sudo grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+The `--disable-shim-lock` flag disables the shim lock verifier so GRUB loads the kernel directly using your enrolled sbctl keys. The `--modules="tpm"` flag is required for sbctl's signing database integration.
+
+**5. Sign all EFI binaries:**
+```bash
+sudo sbctl sign -s /efi/EFI/GRUB/grubx64.efi
+sudo sbctl sign -s /efi/EFI/Boot/bootx64.efi
+sudo sbctl sign -s /boot/vmlinuz-linux
+```
+
+The `-s` flag registers each file in sbctl's database so it is automatically re-signed on kernel and bootloader updates via the pacman hook.
+
+**6. Verify:**
+```bash
+sudo sbctl verify 2>/dev/null | grep -E "grubx64|bootx64|vmlinuz"
+```
+
+All three should show as signed. The Microsoft files in `/efi/EFI/Microsoft/` will show unsigned — this is expected and correct. They are signed by Microsoft's key which was enrolled via `--microsoft`.
+
+**7. Enable Secure Boot:**
+
+Reboot → F2 → Security → Secure Boot → Enable → Save & Exit.
+
+Boot into Arch and confirm:
+```bash
+sudo sbctl status
+# Secure Boot: ✓ Enabled
+```
+
+---
+
+## Recovery: Broken GRUB from grub-mkimage
+
+If GRUB drops to a `grub>` prompt with no boot menu after Secure Boot changes, the cause is a broken prefix path from a manual `grub-mkimage` invocation. Boot the Arch USB and chroot in:
+
+```bash
+mount /dev/nvme0n1p5 /mnt
+mount /dev/nvme0n1p1 /mnt/efi
+mount /dev/sda3 /mnt/home
+swapon /dev/sda2
+arch-chroot /mnt
+```
+
+Then reinstall GRUB correctly:
+```bash
+grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
+grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+Re-sign and proceed from Step 5 of the corrected Secure Boot procedure above.
+
+---
+
+## Notes
+
+- Do not use `grub-mkimage` manually. `grub-install` with `--disable-shim-lock` handles everything correctly.
+- `shim-signed` (AUR) is not needed for this setup. sbctl with custom keys and `--disable-shim-lock` is the correct approach for Arch without shim.
+- The `ESP_PATH=/efi` environment variable (in `/etc/environment`) may be needed if sbctl cannot locate the EFI partition. Add it and reboot if `sbctl verify` shows unexpected behavior post-install.
