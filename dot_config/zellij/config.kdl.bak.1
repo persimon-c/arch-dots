@@ -1,0 +1,53 @@
+// ~/.config/zellij/config.kdl
+// Theme: Catppuccin Mocha (official)
+// Status bar: minimal — mode, tab name, session name only.
+// Font inherits from Kitty (no separate font config needed in Zellij).
+
+// ─── Theme ───────────────────────────────────────────────────────────────────
+
+themes {
+    catppuccin-mocha {
+        fg "#cdd6f4"        // Text
+        bg "#1e1e2e"        // Base
+        black "#45475a"     // Surface 1
+        red "#f38ba8"       // Red
+        green "#a6e3a1"     // Green
+        yellow "#f9e2af"    // Yellow
+        blue "#89b4fa"      // Blue
+        magenta "#cba4f7"   // Mauve
+        cyan "#89dceb"      // Sky
+        white "#bac2de"     // Subtext 1
+        orange "#fab387"    // Peach
+    }
+}
+
+theme "catppuccin-mocha"
+
+// ─── UI ──────────────────────────────────────────────────────────────────────
+
+// Show minimal pane frames — just enough to distinguish panes.
+pane_frames true
+
+// ─── Status bar ──────────────────────────────────────────────────────────────
+// Show mode, tab name, and session name only.
+// The default layout includes more info than needed — override it here.
+
+ui {
+    pane_frames {
+        hide_session_name false
+        rounded_corners true
+    }
+}
+
+// ─── Keybinds ────────────────────────────────────────────────────────────────
+// No custom keybinds at this stage — default Zellij binds are fine.
+// Ctrl+g = enter/exit locked mode
+// Alt+n = new pane
+// Alt+w = close pane
+// Ctrl+p then d/r/u/d = split pane
+
+// ─── Misc ────────────────────────────────────────────────────────────────────
+on_force_close "quit"
+scroll_buffer_size 10000
+copy_on_select true
+default_shell "zsh"

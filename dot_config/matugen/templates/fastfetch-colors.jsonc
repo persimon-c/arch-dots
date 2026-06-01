@@ -1,0 +1,8 @@
+{
+  "display": {
+    "color": {
+      "keys": "{{ colors.primary.default.hex }}",
+      "title": "{{ colors.primary.default.hex }}"
+    }
+  }
+}

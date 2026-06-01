@@ -1,0 +1,39 @@
+# ~/.config/matugen/config.toml
+# Tells matugen which template files to render and where to write each output.
+# Run: matugen image ~/wallpapers/yourwallpaper.jpg
+# After running, verify each output path contains color values.
+
+[config]
+mode = "dark"           # Always generate dark-mode colors (Catppuccin Mocha is a dark theme)
+scheme_type = "tonal-spot"  # Material You tonal spot — best for accent extraction from photos
+
+[templates.colors_sh]
+# Shell-sourceable color variables. Read by Quickshell colors.qml and any
+# shell script that needs accent colors.
+input_path  = "~/.config/matugen/templates/colors.sh"
+output_path = "~/.config/matugen/colors.sh"
+
+[templates.colors_css]
+# CSS custom properties. Ready for use in Rofi .rasi files and Swaync style.css.
+input_path  = "~/.config/matugen/templates/colors.css"
+output_path = "~/.config/matugen/colors.css"
+
+[templates.hyprland]
+# Hyprland variable format. Sourced by hyprland.conf to set border gradient colors.
+input_path  = "~/.config/matugen/templates/hypr-colors.conf"
+output_path = "~/.config/hypr/colors.conf"
+
+[templates.kitty]
+# Kitty color format. Included by kitty.conf to set cursor and border accent.
+# The wallpaper-change script calls kitty @ set-colors after this is written.
+input_path  = "~/.config/matugen/templates/kitty-colors.conf"
+output_path = "~/.config/kitty/matugen-colors.conf"
+
+[templates.rofi]
+# Rofi accent variables. Imported by catppuccin-mocha.rasi.
+input_path  = "~/.config/matugen/templates/rofi-colors.rasi"
+output_path = "~/.config/rofi/colors.rasi"
+
+[templates.fastfetch]
+input_path  = "~/.config/matugen/templates/fastfetch-colors.jsonc"
+output_path = "~/.config/fastfetch/colors.jsonc"

@@ -1,0 +1,40 @@
+# Zathura — Catppuccin Mocha + dynamic accent
+# Accent updated by wallpaper-change.sh
+
+# Colors
+set default-bg                  "#1e1e2e"
+set default-fg                  "#cdd6f4"
+set statusbar-bg                "#181825"
+set statusbar-fg                "#cdd6f4"
+set inputbar-bg                 "#181825"
+set inputbar-fg                 "#cdd6f4"
+set notification-bg             "#181825"
+set notification-fg             "#cdd6f4"
+set notification-error-bg       "#181825"
+set notification-error-fg       "#f38ba8"
+set notification-warning-bg     "#181825"
+set notification-warning-fg     "#fab387"
+set highlight-color             "#aec6ff"
+set highlight-active-color      "#aec6ff"
+set completion-bg               "#313244"
+set completion-fg               "#cdd6f4"
+set completion-highlight-bg     "#45475a"
+set completion-highlight-fg     "#aec6ff"
+set recolor-lightcolor          "#1e1e2e"
+set recolor-darkcolor           "#cdd6f4"
+
+# UI
+set font                        "JetBrains Mono Nerd Font 11"
+set statusbar-h-padding         8
+set statusbar-v-padding         4
+set guioptions                  ""
+set recolor                     "true"
+
+# Behavior
+set scroll-step                 50
+set zoom-min                    10
+set zoom-max                    1000
+set adjust-open                 "best-fit"
+set pages-per-row               1
+set render-loading              "true"
+set highlight-transparency 0.8

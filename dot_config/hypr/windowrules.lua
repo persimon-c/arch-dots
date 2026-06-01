@@ -1,0 +1,5 @@
+hl.window_rule({ match = { class = "pavucontrol" }, float = true, center = true })
+hl.window_rule({ match = { class = "blueman-manager" }, float = true, center = true })
+hl.window_rule({ match = { class = "org.gnome.Calculator" }, float = true, center = true })
+hl.window_rule({ match = { class = "brave-browser" }, workspace = "2" })
+hl.window_rule({ match = { class = "discord" }, workspace = "4" })

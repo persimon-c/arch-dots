@@ -1,0 +1,24 @@
+layout {
+    pane split_direction="vertical" {
+        // Left pane: Yazi file manager, 40% width
+        pane size="40%" {
+            command "yazi"
+        }
+
+        // Right column: split horizontally
+        pane split_direction="horizontal" size="60%" {
+            // Top-right: lazygit
+            pane size="55%" {
+                command "lazygit"
+            }
+
+            // Bottom-right: shell
+            pane size="45%" {
+            }
+        }
+    }
+
+    pane size=1 borderless=true {
+        plugin location="zellij:compact-bar"
+    }
+}
