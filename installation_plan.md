@@ -1505,3 +1505,129 @@ Re-sign and proceed from Step 5 of the corrected Secure Boot procedure above.
 - Do not use `grub-mkimage` manually. `grub-install` with `--disable-shim-lock` handles everything correctly.
 - `shim-signed` (AUR) is not needed for this setup. sbctl with custom keys and `--disable-shim-lock` is the correct approach for Arch without shim.
 - The `ESP_PATH=/efi` environment variable (in `/etc/environment`) may be needed if sbctl cannot locate the EFI partition. Add it and reboot if `sbctl verify` shows unexpected behavior post-install.
+
+
+
+
+
+
+----------------------------------------------------------------------------
+
+# Next Steps — Secure Boot Setup
+
+Current state: Windows is healthy. Arch is installed and intact. GRUB is broken (drops to grub> prompt). Secure Boot is disabled. sbctl keys are enrolled.
+
+---
+
+## Step 1 — Flash Arch ISO to USB
+
+Flash the Arch Linux ISO to your USB drive using Rufus (GPT, DD mode).
+
+---
+
+## Step 2 — Boot Arch Live USB
+
+Reboot → F2 → set USB as first boot device → Save & Exit.
+
+---
+
+## Step 3 — Mount and Chroot
+
+At the live shell (`root@archiso`), run these in order:
+
+```bash
+mount /dev/nvme0n1p5 /mnt
+mount /dev/nvme0n1p1 /mnt/efi
+mount /dev/sda3 /mnt/home
+swapon /dev/sda2
+arch-chroot /mnt
+```
+
+lsblk will show no mountpoints before these commands — that is normal. The live environment never auto-mounts your internal partitions.
+
+---
+
+## Step 4 — Reinstall GRUB
+
+```bash
+grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
+grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+`--disable-shim-lock` disables the shim lock verifier that was causing the original boot failure. `--modules="tpm"` is required for sbctl integration.
+
+Verify grub-install reports no errors before continuing.
+
+---
+
+## Step 5 — Re-sign EFI Binaries
+
+```bash
+sbctl sign -s /efi/EFI/GRUB/grubx64.efi
+sbctl sign -s /efi/EFI/Boot/bootx64.efi
+sbctl sign -s /boot/vmlinuz-linux
+```
+
+Verify all three are signed:
+
+```bash
+sbctl verify 2>/dev/null | grep -E "grubx64|bootx64|vmlinuz"
+```
+
+Expected output:
+```
+✓ /boot/vmlinuz-linux is signed
+✓ /efi/EFI/Boot/bootx64.efi is signed
+✓ /efi/EFI/GRUB/grubx64.efi is signed
+```
+
+---
+
+## Step 6 — Exit and Unmount
+
+```bash
+exit
+umount -R /mnt
+reboot
+```
+
+Remove the USB when the screen goes dark.
+
+---
+
+## Step 7 — Enable Secure Boot in BIOS
+
+Reboot → F2 → Security → Secure Boot → Enable → Save & Exit.
+
+---
+
+## Step 8 — Confirm Secure Boot is Working
+
+Boot into Arch normally. At the terminal run:
+
+```bash
+sudo sbctl status
+```
+
+Expected output:
+```
+Installed:    ✓ sbctl is installed
+Setup Mode:   ✓ Disabled
+Secure Boot:  ✓ Enabled
+Vendor Keys:  microsoft
+```
+
+If Secure Boot shows Enabled, Step 32 is complete.
+
+---
+
+## If Something Goes Wrong
+
+**GRUB drops to grub> prompt again:**
+Boot the Arch USB, chroot in (Step 3), and re-run Step 4 and Step 5.
+
+**Secure Boot blocks boot:**
+Disable Secure Boot in BIOS, boot Arch USB, chroot in, and re-run Step 4 and Step 5. Then re-enable Secure Boot.
+
+**Windows won't boot after enabling Secure Boot:**
+Windows boot files are signed by Microsoft's key which was enrolled via `--microsoft`. Windows should boot fine. If it doesn't, disable Secure Boot temporarily, boot Windows, then re-enable.
