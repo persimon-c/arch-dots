@@ -2,8 +2,6 @@
 
 All keybinds for the Arch Linux / Hyprland setup on the ASUS TUF Gaming FX505DT.
 
-> **For Claude sessions:** paste this entire file when writing `keybinds.conf` or any config that references keybinds. This is the single source of truth — `keybinds.conf` must mirror this document exactly.
-
 ---
 
 ## Conventions
