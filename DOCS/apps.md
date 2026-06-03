@@ -41,6 +41,7 @@ linux-firmware
 linux-headers
 luajit
 matugen
+mesa-utils
 mokutil
 mpv
 networkmanager
@@ -65,6 +66,7 @@ pyenv
 qt5-wayland
 qt6-wayland
 quickshell-git
+quickshell-overview-git
 radeontop
 rofi
 rofimoji
@@ -98,8 +100,7 @@ zathura-pdf-mupdf
 zellij
 zsh
 
-~ 
-❯ flatpak list                      
+❯ flatpak list
 Name                       Application ID                     Version                  Branch      Installation
 Discord                    com.discordapp.Discord             1.0.141                  stable      system
 Flatseal                   com.github.tchx84.Flatseal         2.4.1                    stable      system
