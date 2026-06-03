@@ -10,7 +10,7 @@ All keybinds for the Arch Linux / Hyprland setup on the ASUS TUF Gaming FX505DT.
 - `Print` = PrtSc key
 - Directional keys = arrow keys only (no vim h/j/k/l)
 - All workspace binds cover 1–9
-- Submaps are modal layers — a submap stays active until explicitly exited with `Escape`
+- Submaps are modal l4ayers — a submap stays active until explicitly exited with `Escape`
 
 ---
 
