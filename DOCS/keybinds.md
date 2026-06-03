@@ -199,18 +199,6 @@ Enter this mode to resize the active window with just arrow keys — no need to 
 | `Up` | Shrink window down (-20px) |
 | `Escape` | Exit resize mode |
 
-```ini
-# Enter resize submap
-bind = SUPER, R, submap, resize
-
-submap = resize
-binde = , right, resizeactive, 20 0
-binde = , left, resizeactive, -20 0
-binde = , down, resizeactive, 0 20
-binde = , up, resizeactive, 0 -20
-bind = , escape, submap, reset
-submap = reset
-```
 
 ---
 
@@ -230,23 +218,6 @@ Prevents accidental triggers on destructive actions — you have to consciously 
 | `E` | Exit Hyprland |
 | `Escape` | Cancel — exit without doing anything |
 
-```ini
-# Enter system submap
-bind = SUPER SHIFT, S, submap, system
-
-submap = system
-bind = , L, exec, hyprlock
-bind = , L, submap, reset
-bind = , S, exec, systemctl suspend
-bind = , S, submap, reset
-bind = , R, exec, systemctl reboot
-bind = , R, submap, reset
-bind = , Q, exec, systemctl poweroff
-bind = , Q, submap, reset
-bind = , E, exit
-bind = , escape, submap, reset
-submap = reset
-```
 
 Note: `Super + L` still works as a direct lock keybind outside of this submap — system mode is for the destructive actions (reboot, shutdown, suspend).
 
@@ -267,22 +238,6 @@ Replaces having to remember three separate screenshot combos.
 | `C` | Region screenshot — clipboard only | Clipboard, no file saved |
 | `Escape` | Cancel | — |
 
-```ini
-# Enter screenshot submap
-bind = SUPER SHIFT, Print, submap, screenshot
-
-submap = screenshot
-bind = , F, exec, grimblast save screen ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
-bind = , F, submap, reset
-bind = , R, exec, grimblast save area ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
-bind = , R, submap, reset
-bind = , W, exec, grimblast save active ~/Pictures/screenshots/$(date +%Y%m%d_%H%M%S).png
-bind = , W, submap, reset
-bind = , C, exec, grimblast copy area
-bind = , C, submap, reset
-bind = , escape, submap, reset
-submap = reset
-```
 
 Note: `Print` alone (full screenshot, direct) and `Super + Print` (region, direct) are kept as standalone binds outside this submap for quick one-shot use. The submap is for when you want to choose the type interactively.
 
@@ -302,7 +257,7 @@ These may be added post-install once the base workflow is established:
 
 ## Window Rules (Floating by Default)
 
-These windows should always open floating regardless of tiling state. Define in `windowrules.conf`.
+These windows should always open floating regardless of tiling state. not everything is here.
 
 | App | Rule | Reason |
 |---|---|---|
@@ -312,19 +267,6 @@ These windows should always open floating regardless of tiling state. Define in 
 | Calculator | Float, center | Small utility |
 | Hyprlock | Fullscreen | Lock screen |
 | Password prompt dialogs | Float, center | Auth dialogs |
-
----
-
-## Workspace Assignments (Default)
-
-Define in `windowrules.conf`. These are starting suggestions — adjust post-install.
-
-| Workspace | App | Rule |
-|---|---|---|
-| 1 | Kitty | Default terminal workspace |
-| 2 | Brave | Browser always opens on 2 |
-| 3 | Antigravity / Sublime Text | Editor workspace |
-| 4 | Discord | Communication |
 
 ---
 
