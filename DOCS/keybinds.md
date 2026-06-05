@@ -10,7 +10,7 @@ All keybinds for the Arch Linux / Hyprland setup on the ASUS TUF Gaming FX505DT.
 - `Print` = PrtSc key
 - Directional keys = arrow keys only (no vim h/j/k/l)
 - All workspace binds cover 1–9
-- Submaps are modal l4ayers — a submap stays active until explicitly exited with `Escape`
+- Submaps are modal layers — a submap stays active until explicitly exited with `Escape`
 
 ---
 
@@ -30,14 +30,14 @@ All keybinds for the Arch Linux / Hyprland setup on the ASUS TUF Gaming FX505DT.
 | `Super + Shift + Down` | Move window down |
 | `Super + Shift + Left` | Move window left |
 | `Super + Shift + Right` | Move window right |
-| `Super + Ctrl + Up` | Resize window up |
-| `Super + Ctrl + Down` | Resize window down |
-| `Super + Ctrl + Left` | Resize window left |
-| `Super + Ctrl + Right` | Resize window right |
-| `Super + Tab` | Cycle focus to next window |
+| `Super + Ctrl + Up` | Resize window up (20px, repeating) |
+| `Super + Ctrl + Down` | Resize window down (20px, repeating) |
+| `Super + Ctrl + Left` | Resize window left (20px, repeating) |
+| `Super + Ctrl + Right` | Resize window right (20px, repeating) |
+| `Super + Tab` | Toggle Quickshell overview |
 | `Super + Shift + Tab` | Cycle focus to previous window |
-| `Alt + Tab` | Cycle to next window (current workspace) |
-| `Alt + Shift + Tab` | Cycle to previous window (current workspace) |
+| `Alt + Tab` | Cycle to next window |
+| `Alt + Shift + Tab` | Cycle to previous window |
 
 ---
 
@@ -46,17 +46,12 @@ All keybinds for the Arch Linux / Hyprland setup on the ASUS TUF Gaming FX505DT.
 | Keybind | Action |
 |---|---|
 | `Super + Return` | Kitty terminal |
-| `Super + Space` | Rofi app launcher |
 | `Super + B` | Brave browser |
 | `Super + A` | Antigravity editor |
 | `Super + S` | Sublime Text |
 | `Super + T` | Thunar file manager |
 | `Super + D` | Discord |
 | `Super + V` | VSCode |
-| `Super + Shift + V` | Clipboard history (cliphist + Rofi) |
-| `Super + W` | Wallpaper switcher (Rofi picker) |
-| `Super + N` | Toggle Swaync notification panel |
-| `Super + G` | Toggle right sidebar (Git/Repo panel) |
 | `Super + E` | Yazi file manager (in Kitty) |
 | `Super + Z` | Zellij (plain, no layout) |
 | `Super + Shift + Z` | Zellij dev layout (main + logs + lazygit) |
@@ -64,32 +59,29 @@ All keybinds for the Arch Linux / Hyprland setup on the ASUS TUF Gaming FX505DT.
 
 ---
 
+## Quickshell Panels
+
+| Keybind | Action |
+|---|---|
+| `Super + Space` | Toggle app launcher |
+| `Super + N` | Toggle notification center |
+| `Super + G` | Toggle right sidebar (Git/Repo panel) |
+| `Super + X` | Toggle left sidebar |
+| `Super + W` | Toggle wallpaper picker |
+| `Super + Shift + C` | Toggle settings panel |
+| `Super + Shift + V` | Toggle clipboard history panel |
+| `Super + semicolon` | Toggle emoji picker |
+
+---
+
 ## Workspaces
 
 | Keybind | Action |
 |---|---|
-| `Super + 1` | Switch to workspace 1 |
-| `Super + 2` | Switch to workspace 2 |
-| `Super + 3` | Switch to workspace 3 |
-| `Super + 4` | Switch to workspace 4 |
-| `Super + 5` | Switch to workspace 5 |
-| `Super + 6` | Switch to workspace 6 |
-| `Super + 7` | Switch to workspace 7 |
-| `Super + 8` | Switch to workspace 8 |
-| `Super + 9` | Switch to workspace 9 |
-| `Super + Shift + 1` | Move window to workspace 1 |
-| `Super + Shift + 2` | Move window to workspace 2 |
-| `Super + Shift + 3` | Move window to workspace 3 |
-| `Super + Shift + 4` | Move window to workspace 4 |
-| `Super + Shift + 5` | Move window to workspace 5 |
-| `Super + Shift + 6` | Move window to workspace 6 |
-| `Super + Shift + 7` | Move window to workspace 7 |
-| `Super + Shift + 8` | Move window to workspace 8 |
-| `Super + Shift + 9` | Move window to workspace 9 |
+| `Super + 1` – `Super + 9` | Switch to workspace 1–9 |
+| `Super + Shift + 1` – `Super + Shift + 9` | Move window to workspace 1–9 |
 | `Super + Scroll Up` | Cycle to next workspace |
 | `Super + Scroll Down` | Cycle to previous workspace |
-| `Super + Ctrl + Right` | Move to next workspace |
-| `Super + Ctrl + Left` | Move to previous workspace |
 
 ---
 
@@ -109,8 +101,8 @@ Direct binds save to `~/Pictures/screenshots/` with a timestamp filename. Clipbo
 
 | Keybind | Action |
 |---|---|
-| `XF86AudioRaiseVolume` | Volume up 5% |
-| `XF86AudioLowerVolume` | Volume down 5% |
+| `XF86AudioRaiseVolume` | Volume up 5% (repeating) |
+| `XF86AudioLowerVolume` | Volume down 5% (repeating) |
 | `XF86AudioMute` | Toggle mute |
 | `XF86AudioPlay` | Play / pause (playerctl) |
 | `XF86AudioNext` | Next track (playerctl) |
@@ -123,8 +115,8 @@ Direct binds save to `~/Pictures/screenshots/` with a timestamp filename. Clipbo
 
 | Keybind | Action | Tool |
 |---|---|---|
-| `XF86MonBrightnessUp` | Brightness up | brightnessctl |
-| `XF86MonBrightnessDown` | Brightness down | brightnessctl |
+| `XF86MonBrightnessUp` | Brightness up 5% (repeating) | brightnessctl |
+| `XF86MonBrightnessDown` | Brightness down 5% (repeating) | brightnessctl |
 
 Add `brightnessctl` to package list — `sudo pacman -S brightnessctl`.
 
@@ -134,10 +126,9 @@ Add `brightnessctl` to package list — `sudo pacman -S brightnessctl`.
 
 | Keybind | Action |
 |---|---|
-| `Super + L` | Lock screen (hyprlock) — also available inside System submap |
+| `Super + L` | Lock screen — also available inside System submap |
 | `Super + Shift + R` | Reload Hyprland config |
 | `Super + Shift + Q` | Quickshell reload |
-| `Super + Shift + C` | Settings panel (Quickshell) |
 | `Super + Shift + S` | Enter System submap (suspend / reboot / shutdown / exit Hyprland) |
 
 ---
@@ -159,28 +150,25 @@ These are not Hyprland keybinds — they are mouse interactions handled entirely
 | Battery pill | Click | Open performance profile dropdown (Silent / Balanced / Performance) |
 | Network pill | Click | Open Wi-Fi network list dropdown |
 | Bluetooth pill | Click | Open paired device list dropdown |
-| Notification bell | Click | Toggle Swaync panel |
+| Notification bell | Click | Toggle notification center |
 | Power button pill | Click | Open lock / suspend / reboot / shutdown popup |
 | Right sidebar refresh button | Click | Re-fetch all data (git log, heatmap, dirty check) |
 | Repo card folder icon | Click | Open Thunar to repo directory |
 | Repo card GitHub icon | Click | Open repo URL in Brave |
 | Repo card editor icon | Click | Open repo in Antigravity |
 
-Global keybind that Quickshell listens for directly (via `GlobalShortcut` or `ShortcutHandler`):
+Keybinds that Quickshell also listens for directly:
 
 | Keybind | Action |
 |---|---|
 | `Super + G` | Toggle right sidebar (Git/Repo panel) |
-
-Note: the left sidebar is mouse-only (Arch logo click). The right sidebar has both a keybind and is togglable via the GitHub commits pill in the top bar when nothing is playing.
+| `Super + X` | Toggle left sidebar |
 
 ---
 
 ## Submaps
 
-Submaps are modal keybinding layers. When a submap is active, normal keybinds are suspended and only the submap's keybinds apply. Exit any submap with `Escape`.
-
-Use `binde` (not `bind`) inside submaps for actions that should repeat while the key is held.
+Submaps are modal keybinding layers. When a submap is active, normal keybinds are suspended and only the submap's keybinds apply. Exit any submap with `Escape`. Keys that should repeat while held use the `{ repeating = true }` bind flag.
 
 ---
 
@@ -189,16 +177,15 @@ Use `binde` (not `bind`) inside submaps for actions that should repeat while the
 **Trigger:** `Super + R`
 **Exit:** `Escape`
 
-Enter this mode to resize the active window with just arrow keys — no need to hold Super + Ctrl every press.
+Enter this mode to resize the active window with just arrow keys — no need to hold `Super + Ctrl` every press.
 
 | Key | Action |
 |---|---|
-| `Right` | Grow window right (20px) |
-| `Left` | Shrink window right (-20px) |
-| `Down` | Grow window down (20px) |
-| `Up` | Shrink window down (-20px) |
+| `Right` | Grow window right (20px, repeating) |
+| `Left` | Shrink window left (20px, repeating) |
+| `Down` | Grow window down (20px, repeating) |
+| `Up` | Shrink window up (20px, repeating) |
 | `Escape` | Exit resize mode |
-
 
 ---
 
@@ -211,13 +198,12 @@ Prevents accidental triggers on destructive actions — you have to consciously 
 
 | Key | Action |
 |---|---|
-| `L` | Lock screen (hyprlock) |
+| `L` | Lock screen |
 | `S` | Suspend |
 | `R` | Reboot |
 | `Q` | Shutdown |
-| `E` | Exit Hyprland |
+| `E` | Exit Hyprland (`loginctl terminate-user ""`) |
 | `Escape` | Cancel — exit without doing anything |
-
 
 Note: `Super + L` still works as a direct lock keybind outside of this submap — system mode is for the destructive actions (reboot, shutdown, suspend).
 
@@ -225,7 +211,7 @@ Note: `Super + L` still works as a direct lock keybind outside of this submap �
 
 ### Screenshot Mode
 
-**Trigger:** `Super + Shift + Print` (replaces the old direct bind for active window screenshot — that bind moves into this submap)
+**Trigger:** `Super + Shift + Print`
 **Exit:** `Escape` or any action (actions auto-exit)
 
 Replaces having to remember three separate screenshot combos.
@@ -237,7 +223,6 @@ Replaces having to remember three separate screenshot combos.
 | `W` | Active window screenshot | `~/Pictures/screenshots/` |
 | `C` | Region screenshot — clipboard only | Clipboard, no file saved |
 | `Escape` | Cancel | — |
-
 
 Note: `Print` alone (full screenshot, direct) and `Super + Print` (region, direct) are kept as standalone binds outside this submap for quick one-shot use. The submap is for when you want to choose the type interactively.
 
@@ -257,7 +242,7 @@ These may be added post-install once the base workflow is established:
 
 ## Window Rules (Floating by Default)
 
-These windows should always open floating regardless of tiling state. not everything is here.
+These windows should always open floating regardless of tiling state. Not everything is here.
 
 | App | Rule | Reason |
 |---|---|---|
