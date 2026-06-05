@@ -4,13 +4,13 @@
     "source": "~/.config/fastfetch/logo.txt",
     "type": "file",
     "color": {
-      "1": "#aec6ff"
+      "1": "#ffb2be"
     }
   },
   "display": {
     "color": {
-      "keys": "#aec6ff",
-      "title": "#aec6ff"
+      "keys": "#ffb2be",
+      "title": "#ffb2be"
     }
   },
   "modules": [
