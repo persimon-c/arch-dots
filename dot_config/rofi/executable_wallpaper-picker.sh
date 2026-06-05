@@ -21,7 +21,7 @@ fi
 mkdir -p "$THUMBNAIL_DIR"
 
 # Build a list of wallpaper files (jpg, jpeg, png, webp) from ~/wallpapers/ recursively.
-mapfile -t WALLPAPERS < <(find "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) | sort)
+mapfile -t WALLPAPERS < <(find "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" \) | sort)
 
 if [[ ${#WALLPAPERS[@]} -eq 0 ]]; then
     notify-send "Wallpaper Picker" "No wallpapers found in $WALLPAPER_DIR" --urgency=normal
