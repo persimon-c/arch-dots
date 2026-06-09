@@ -1,6 +1,6 @@
 # ~/.config/matugen/config.toml
 # Run: matugen image ~/wallpapers/yourwallpaper.jpg
-# post_hook entries handle per-app reloads after generation.
+# The wallpaper script handles per-app reloads after generation.
 
 [config]
 mode = "dark"
@@ -14,19 +14,19 @@ input_path  = "~/.config/matugen/templates/quickshell-colors.json"
 output_path = "~/.config/quickshell/theme/colors.json"
 
 # ── Hyprland ──────────────────────────────────────────────────────────────────
-# dofile()'d by modules/colors.lua — reload Hyprland after write.
+# dofile()'d by modules/colors.lua — Hyprland is reloaded by the wallpaper script.
 
 [templates.hyprland]
 input_path  = "~/.config/matugen/templates/hypr-colors.lua"
-output_path = "~/.config/hypr/modules/hypr-colors.lua"
-post_hook   = "hyprctl reload"
+output_path = "~/.config/hypr/modules/colors.lua"
+
 
 # ── Kitty ─────────────────────────────────────────────────────────────────────
 
 [templates.kitty]
 input_path  = "~/.config/matugen/templates/kitty-colors.conf"
 output_path = "~/.config/kitty/matugen-colors.conf"
-post_hook   = "kitty @ set-colors --all ~/.config/kitty/matugen-colors.conf"
+
 
 # ── GTK 3 + 4 ────────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ output_path = "~/.config/gtk-4.0/colors.css"
 [templates.cava]
 input_path  = "~/.config/matugen/templates/cava.ini"
 output_path = "~/.config/cava/config"
-post_hook   = "pkill -USR1 cava"
+
 
 # ── Zathura ───────────────────────────────────────────────────────────────────
 # No reload needed — reads on open.
@@ -60,9 +60,9 @@ output_path = "~/.config/matugen/colors.sh"
 
 # ── CSS (legacy — kept for reference) ────────────────────────────────────────
 
-[templates.colors_css]
-input_path  = "~/.config/matugen/templates/colors.css"
-output_path = "~/.config/matugen/colors.css"
+# [templates.colors_css]
+# input_path  = "~/.config/matugen/templates/colors.css"
+# output_path = "~/.config/matugen/colors.css"
 
 # ── Fastfetch ─────────────────────────────────────────────────────────────────
 
