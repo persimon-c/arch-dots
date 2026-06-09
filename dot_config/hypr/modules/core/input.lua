@@ -16,6 +16,7 @@ hl.config({
             tap_to_click = true,
             disable_while_typing = true,
             clickfinger_behavior = false,
+            scroll_factor = 0.2,  -- lower = less sensitive, default is 1.0
         },
     },
 })
