@@ -2,8 +2,9 @@
 // Wraps SystemClock and exposes pre-formatted strings so UI components
 // never format dates themselves — change format here, updates everywhere.
 
+pragma Singleton
+
 import Quickshell
-import QtQuick
 
 Singleton {
     id: root
@@ -29,7 +30,7 @@ Singleton {
     readonly property string timePeriod:   Qt.formatDateTime(clock.date, "hh:mm AP")     // 02:35 PM
 
     // Date display
-    readonly property string dateShort:    Qt.formatDateTime(clock.date, "ddd d MMM")    // Mon 5 Jun
+    readonly property string dateShort:    Qt.formatDateTime(clock.date, "d MMM")    // Mon 5 Jun
     readonly property string dateFull:     Qt.formatDateTime(clock.date, "dddd, d MMMM yyyy") // Monday, 5 June 2026
     readonly property string dateIso:      Qt.formatDateTime(clock.date, "yyyy-MM-dd")   // 2026-06-05
 
@@ -49,8 +50,4 @@ Singleton {
         return Qt.formatDateTime(d, "ddd hh:mm")
     }
 
-    // ── Debug ─────────────────────────────────────────────────────────────
-    Component.onCompleted: {
-        console.log("DateTime: service ready —", timeFull, dateShort)
-    }
 }
