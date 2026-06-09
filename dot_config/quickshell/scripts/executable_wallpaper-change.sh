@@ -4,7 +4,7 @@
 # Usage: wallpaper-change.sh /path/to/wallpaper.jpg
 #
 # Called by: Wallpaper.qml (setWallpaper), hypridle fallback
-# Requires:  awww, matugen, hyprctl, kitty (optional)
+# Requires:  swww (awww), matugen, hyprctl, kitty (optional)
 
 set -euo pipefail
 
@@ -55,7 +55,8 @@ echo "$WALLPAPER" > ~/.cache/current_wallpaper_path
 #   → ~/.config/zathura/zathurarc
 #   → ~/.config/fastfetch/colors.jsonc
 
-matugen image "$WALLPAPER"
+matugen image "$WALLPAPER" \
+    --config "$HOME/.config/matugen/config.toml"
 
 # ── 4. Reload affected apps ───────────────────────────────────────────────────
 
