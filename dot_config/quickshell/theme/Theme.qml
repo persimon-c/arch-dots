@@ -3,6 +3,8 @@
 // To change the font family: edit fontFamily (and optionally fontFamilyMono) only.
 // To change a size scale: edit only the named property — all consumers update automatically.
 
+pragma Singleton
+
 import Quickshell
 
 Singleton {
@@ -10,8 +12,8 @@ Singleton {
     // ── Typography ────────────────────────────────────────────────────────
     // Change fontFamily here to restyle all text in the shell at once.
 
-    readonly property string fontFamily:      "JetBrains Mono"
-    readonly property string fontFamilyMono:  "JetBrains Mono"  // used for clocks, code, stats
+    readonly property string fontFamily:      "GeistMono Nerd Font"
+    readonly property string fontFamilyMono:  "GeistMono Nerd Font"
 
     // Font sizes (px)
     readonly property int fontSizeXs:   10
