@@ -59,3 +59,15 @@ if [ -d "$FNM_PATH" ]; then
   eval "$(fnm env --shell zsh --use-on-cd)"
 fi
 alias qs-overview='DRI_PRIME=0 AQ_DRM_DEVICES=/dev/dri/card2 /usr/bin/qs -c overview 2>/dev/null &'
+
+# bun completions
+[ -s "/home/simone/.bun/_bun" ] && source "/home/simone/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/simone/.local/bin:$PATH"
+export PATH="/home/simone/.local/bin:$PATH"
