@@ -20,7 +20,7 @@
 //   Github.reposError           string
 //   Github.refresh()            call to re-fetch all three
 
-//pragma Singleton
+pragma Singleton
 
 import QtQuick
 import Quickshell
