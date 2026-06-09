@@ -1,23 +1,25 @@
-// shell.qml — ShellRoot skeleton
+// shell.qml — ShellRoot entry point
 // Imports are added progressively each phase.
 
 //@ pragma NativeTextRendering
 //@ pragma DropExpensiveFonts
+//@ pragma CacheDir $BASE/quickshell
+//@ pragma IconTheme Papirus-Dark
 
 import Quickshell
-import "./theme"
-import "./services"
-import "./components"
-import "./utils"
-import "./polkit"
+import "theme"
+import "services"
+import "state"
+// import "./polkit"
+import "bar"
 
 ShellRoot {
 
     // ── Phase QS2b — polkit ───────────────────────────────────────────────
-    PolkitDialog {}
+    // PolkitDialog {}
 
     // ── Phase QS4 — bar ───────────────────────────────────────────────────
-    // Bar {}
+    Bar {}
 
     // ── Phase QS6 — notifications ─────────────────────────────────────────
     // NotificationPopup {}
