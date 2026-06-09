@@ -1,11 +1,5 @@
-// services/System.qml — System statistics service
-// CPU: /proc/stat        — delta between two reads → usage percent
-// RAM: /proc/meminfo     — MemTotal, MemAvailable
-// Disk: /proc/diskstats  — root partition via FileView on /
-// Net:  /proc/net/dev    — rx/tx bytes delta per interval
-// All reads are FileView + Timer polling. No external processes.
-// Interval is 2s by default — change updateInterval to tune.
-
+// services/System.qml
+pragma Singleton
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -14,9 +8,6 @@ Singleton {
     id: root
 
     // ── Poll interval (ms) ────────────────────────────────────────────────
-    // 2000ms is a good balance for a sidebar stats card.
-    // Set lower (e.g. 1000) for the utilities panel live view.
-
     property int updateInterval: 2000
 
     Timer {
@@ -26,8 +17,6 @@ Singleton {
         onTriggered: root._poll()
     }
 
-    // ── Initial read on startup ───────────────────────────────────────────
-
     Component.onCompleted: {
         _poll()
         console.log("System: service ready")
@@ -36,14 +25,12 @@ Singleton {
     function _poll() {
         cpuFile.reload()
         memFile.reload()
-        diskFile.reload()
         netFile.reload()
+        diskStatsFile.reload()
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // CPU
-    // /proc/stat first line: "cpu  user nice system idle iowait irq softirq..."
-    // Usage = 1 - (idle_delta / total_delta)
     // ─────────────────────────────────────────────────────────────────────
 
     FileView {
@@ -52,20 +39,15 @@ Singleton {
         onLoaded: root._parseCpu()
     }
 
-    // Previous tick values for delta calculation
     property real _cpuPrevIdle:  0
     property real _cpuPrevTotal: 0
-
-    // Public
-    property real cpuPercent: 0  // 0.0 – 100.0
-    property real _cpuPercent: 0
-    // expose via alias so it reads as a clean property
-    Binding { target: root; property: "cpuPercent"; value: root._cpuPercent }
+    property real cpuPercent:    0
 
     function _parseCpu() {
-        var line = cpuFile.text().split("\n")[0]  // "cpu  ..."
+        var line = cpuFile.text().split("\n")[0]
+        if (!line || !line.startsWith("cpu ")) return
+
         var parts = line.trim().split(/\s+/)
-        // parts: ["cpu", user, nice, system, idle, iowait, irq, softirq, steal, ...]
         if (parts.length < 5) return
 
         var user    = parseFloat(parts[1]) || 0
@@ -80,13 +62,11 @@ Singleton {
         var totalIdle  = idle + iowait
         var totalBusy  = user + nice + system + irq + softirq + steal
         var total      = totalIdle + totalBusy
-
         var deltaTotal = total - _cpuPrevTotal
         var deltaIdle  = totalIdle - _cpuPrevIdle
 
-        if (deltaTotal > 0) {
-            _cpuPercent = Math.round((1 - deltaIdle / deltaTotal) * 100)
-        }
+        if (deltaTotal > 0)
+            cpuPercent = Math.round((1 - deltaIdle / deltaTotal) * 100)
 
         _cpuPrevTotal = total
         _cpuPrevIdle  = totalIdle
@@ -94,8 +74,6 @@ Singleton {
 
     // ─────────────────────────────────────────────────────────────────────
     // RAM
-    // /proc/meminfo — MemTotal, MemAvailable (in kB)
-    // Used = MemTotal - MemAvailable  (most accurate "actually used" figure)
     // ─────────────────────────────────────────────────────────────────────
 
     FileView {
@@ -104,14 +82,11 @@ Singleton {
         onLoaded: root._parseMem()
     }
 
-    // Public — all in MiB for display
-    property real ramTotalMiB:    0
-    property real ramUsedMiB:     0
-    property real ramAvailMiB:    0
-    readonly property real ramPercent: ramTotalMiB > 0
-        ? Math.round((ramUsedMiB / ramTotalMiB) * 100) : 0
+    property real ramTotalMiB: 0
+    property real ramUsedMiB:  0
+    property real ramAvailMiB: 0
 
-    // Human-readable strings
+    readonly property real   ramPercent:  ramTotalMiB > 0 ? Math.round((ramUsedMiB / ramTotalMiB) * 100) : 0
     readonly property string ramUsedStr:  _mibStr(ramUsedMiB)
     readonly property string ramTotalStr: _mibStr(ramTotalMiB)
 
@@ -126,8 +101,7 @@ Singleton {
     }
 
     function _memKey(text, key) {
-        var re = new RegExp(key + ":\\s+(\\d+)")
-        var m  = text.match(re)
+        var m = text.match(new RegExp(key + ":\\s+(\\d+)"))
         return m ? parseFloat(m[1]) : 0
     }
 
@@ -137,96 +111,134 @@ Singleton {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Disk — root partition (/)
-    // /proc/mounts gives us the device name, but reading usage is easier
-    // via `df` — however to avoid a Process we read /proc/diskstats for
-    // I/O rates and use statvfs-equivalent via a one-shot df call only
-    // at startup for total/used. We refresh disk usage every 30s (it
-    // changes slowly) using a separate slower timer.
+    // Disk — usage via df (one process, all mounts at once)
     // ─────────────────────────────────────────────────────────────────────
 
-    FileView {
-        id: diskFile
-        path: "/proc/diskstats"
-        onLoaded: root._parseDiskIo()
-    }
+    property var monitoredDisks: ["nvme0n1p5", "sda3"]
+    property var disks: ({})
+    property int disksRevision: 0
 
-    // Disk usage — updated by df process every 30s
-    property real diskTotalGiB: 0
-    property real diskUsedGiB:  0
-    property real diskFreeGiB:  0
-    readonly property real diskPercent: diskTotalGiB > 0
-        ? Math.round((diskUsedGiB / diskTotalGiB) * 100) : 0
-
-    readonly property string diskUsedStr:  diskUsedGiB.toFixed(1) + " GiB"
-    readonly property string diskTotalStr: diskTotalGiB.toFixed(1) + " GiB"
-
-    // Disk I/O rates (MiB/s)
-    property real diskReadMibs:  0
-    property real diskWriteMibs: 0
-
-    property real _diskPrevRead:  0
-    property real _diskPrevWrite: 0
-    property string _rootDevice: ""  // e.g. "sda" or "nvme0n1"
-
-    // Slower timer for disk usage (df) — every 30s
-    Timer {
-        interval: 30000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: dfProcess.running = true
-    }
-
+    // Disk usage: one df process, slower poll
     Process {
-        id: dfProcess
-        command: ["df", "--output=source,size,used,avail", "/"]
+        id: dfProc
+        command: ["df", "--output=source,size,used,avail,target"]
         stdout: StdioCollector {
             onStreamFinished: root._parseDf(this.text)
         }
     }
 
-    function _parseDf(text) {
-        var lines = text.trim().split("\n")
-        if (lines.length < 2) return
-        var parts = lines[1].trim().split(/\s+/)
-        // parts: [source, 1K-blocks, used, avail]
-        if (parts.length < 4) return
-        _rootDevice  = parts[0].replace(/^\/dev\//, "").replace(/p?\d+$/, "")
-        diskTotalGiB = parseFloat(parts[1]) / (1024 * 1024)
-        diskUsedGiB  = parseFloat(parts[2]) / (1024 * 1024)
-        diskFreeGiB  = parseFloat(parts[3]) / (1024 * 1024)
+    Timer {
+        interval: 30000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: dfProc.running = true
     }
 
-    function _parseDiskIo() {
-        if (!_rootDevice) return
-        var lines = diskFile.text().split("\n")
-        for (var i = 0; i < lines.length; i++) {
+    function _parseDf(output) {
+        var lines = output.trim().split("\n")
+        for (var i = 1; i < lines.length; ++i) {
             var parts = lines[i].trim().split(/\s+/)
-            // field 3 is device name, field 6 is sectors read, field 10 is sectors written
-            if (parts.length < 10) continue
-            if (parts[2] !== _rootDevice) continue
+            if (parts.length < 5) continue
+            var source = parts[0].replace(/^\/dev\//, "")
 
-            var sectorsRead  = parseFloat(parts[5])  || 0
-            var sectorsWrite = parseFloat(parts[9])  || 0
-            // Linux sector = 512 bytes
-            var bytesRead  = sectorsRead  * 512
-            var bytesWrite = sectorsWrite * 512
+            for (var d = 0; d < monitoredDisks.length; ++d) {
+                var diskName = monitoredDisks[d]
+                if (source !== diskName && !source.startsWith(diskName)) continue
 
-            if (_diskPrevRead > 0) {
-                diskReadMibs  = Math.max(0, (bytesRead  - _diskPrevRead)  / (updateInterval / 1000) / (1024 * 1024))
-                diskWriteMibs = Math.max(0, (bytesWrite - _diskPrevWrite) / (updateInterval / 1000) / (1024 * 1024))
+                var totalGiB = parseFloat(parts[1]) / (1024 * 1024)
+                var usedGiB  = parseFloat(parts[2]) / (1024 * 1024)
+                var freeGiB  = parseFloat(parts[3]) / (1024 * 1024)
+                var mount    = parts[4]
+                var existing = disks[diskName] || {}
+
+                var updated = Object.assign({}, existing, {
+                    name:      diskName,
+                    mount:     mount,
+                    totalGiB:  totalGiB,
+                    usedGiB:   usedGiB,
+                    freeGiB:   freeGiB,
+                    percent:   Math.round((usedGiB / totalGiB) * 100),
+                    usedStr:   usedGiB.toFixed(1) + " GiB",
+                    totalStr:  totalGiB.toFixed(1) + " GiB"
+                })
+                disks[diskName] = updated
             }
-            _diskPrevRead  = bytesRead
-            _diskPrevWrite = bytesWrite
-            break
         }
+        disksRevision++
+    }
+
+    // Disk I/O: /proc/diskstats, every poll interval
+    FileView {
+        id: diskStatsFile
+        path: "/proc/diskstats"
+        onLoaded: root._parseAllDiskIo()
+    }
+
+    property var _diskPrevIo: ({})
+
+    function _parseAllDiskIo() {
+        var lines = diskStatsFile.text().split("\n")
+        var changed = false
+
+        for (var d = 0; d < monitoredDisks.length; ++d) {
+            var diskName = monitoredDisks[d]
+
+            for (var i = 0; i < lines.length; ++i) {
+                var parts = lines[i].trim().split(/\s+/)
+                if (parts.length < 10 || parts[2] !== diskName) continue
+
+                var bytesRead  = (parseFloat(parts[5])  || 0) * 512
+                var bytesWrite = (parseFloat(parts[9])  || 0) * 512
+                var prev       = _diskPrevIo[diskName]
+
+                if (prev) {
+                    var secs      = updateInterval / 1000
+                    var readMibs  = Math.max(0, (bytesRead  - prev.read)  / secs / (1024 * 1024))
+                    var writeMibs = Math.max(0, (bytesWrite - prev.write) / secs / (1024 * 1024))
+
+                    if (disks[diskName]) {
+                        var d2 = Object.assign({}, disks[diskName], {
+                            readMibs:  readMibs,
+                            writeMibs: writeMibs,
+                            readStr:   _diskIoStr(readMibs),
+                            writeStr:  _diskIoStr(writeMibs)
+                        })
+                        disks[diskName] = d2
+                        changed = true
+                    }
+                }
+
+                _diskPrevIo[diskName] = { read: bytesRead, write: bytesWrite }
+                break
+            }
+        }
+
+        if (changed) disksRevision++
+    }
+
+    function _diskIoStr(mibs) {
+        if (mibs >= 1024) return (mibs / 1024).toFixed(1) + " GiB/s"
+        if (mibs >= 1)    return mibs.toFixed(1) + " MiB/s"
+        return (mibs * 1024).toFixed(0) + " KiB/s"
+    }
+
+    // Convenience: first disk (disksRevision dependency forces re-evaluation on update)
+    readonly property real   diskTotalGiB:  { disksRevision; return _firstDisk("totalGiB",  0) }
+    readonly property real   diskUsedGiB:   { disksRevision; return _firstDisk("usedGiB",   0) }
+    readonly property real   diskFreeGiB:   { disksRevision; return _firstDisk("freeGiB",   0) }
+    readonly property real   diskPercent:   { disksRevision; return _firstDisk("percent",   0) }
+    readonly property string diskUsedStr:   { disksRevision; return _firstDisk("usedStr",   "") }
+    readonly property string diskTotalStr:  { disksRevision; return _firstDisk("totalStr",  "") }
+
+    function _firstDisk(key, fallback) {
+        if (monitoredDisks.length === 0) return fallback
+        var d = disks[monitoredDisks[0]]
+        return d ? (d[key] ?? fallback) : fallback
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Network throughput
-    // /proc/net/dev — rx/tx bytes delta per interval
-    // Uses the first non-loopback interface that has traffic.
+    // Network
     // ─────────────────────────────────────────────────────────────────────
 
     FileView {
@@ -235,22 +247,21 @@ Singleton {
         onLoaded: root._parseNet()
     }
 
-    // Public — KiB/s
-    property real netRxKibs: 0
-    property real netTxKibs: 0
+    property real   netRxKibs: 0
+    property real   netTxKibs: 0
+    property string primaryInterface: ""
 
     readonly property string netRxStr: _netStr(netRxKibs)
     readonly property string netTxStr: _netStr(netTxKibs)
 
-    property var _netPrev: ({})  // { ifname: { rx, tx } }
+    property var _netPrev: ({})
 
     function _parseNet() {
         var lines = netFile.text().split("\n")
-        // Skip header lines (first 2)
         var best = null
-        var bestRx = -1
+        var bestTotal = -1
 
-        for (var i = 2; i < lines.length; i++) {
+        for (var i = 2; i < lines.length; ++i) {
             var line = lines[i].trim()
             if (!line) continue
             var colon = line.indexOf(":")
@@ -259,28 +270,26 @@ Singleton {
             if (iface === "lo") continue
 
             var parts = line.substring(colon + 1).trim().split(/\s+/)
-            // fields: rx_bytes, rx_packets, rx_errs, rx_drop, rx_fifo, rx_frame, rx_compressed, rx_multicast,
-            //         tx_bytes, tx_packets, ...
             if (parts.length < 9) continue
             var rx = parseFloat(parts[0]) || 0
             var tx = parseFloat(parts[8]) || 0
 
-            var prev = _netPrev[iface] || { rx: rx, tx: tx }
+            var prev   = _netPrev[iface] || { rx: rx, tx: tx }
             var deltaRx = Math.max(0, rx - prev.rx)
             var deltaTx = Math.max(0, tx - prev.tx)
             _netPrev[iface] = { rx: rx, tx: tx }
 
-            // Pick the interface with the most traffic as "primary"
-            if (deltaRx + deltaTx > bestRx) {
-                bestRx = deltaRx + deltaTx
-                best = { rx: deltaRx, tx: deltaTx }
+            if (deltaRx + deltaTx > bestTotal) {
+                bestTotal = deltaRx + deltaTx
+                best      = { rx: deltaRx, tx: deltaTx }
+                primaryInterface = iface
             }
         }
 
         if (best) {
-            var interval_s = updateInterval / 1000
-            netRxKibs = best.rx / interval_s / 1024
-            netTxKibs = best.tx / interval_s / 1024
+            var secs   = updateInterval / 1000
+            netRxKibs = best.rx / secs / 1024
+            netTxKibs = best.tx / secs / 1024
         }
     }
 
@@ -289,38 +298,37 @@ Singleton {
         return Math.round(kibs) + " KiB/s"
     }
 
-    // ── Uptime ────────────────────────────────────────────────────────────
-    // /proc/uptime — first field is seconds since boot
+    // ─────────────────────────────────────────────────────────────────────
+    // Uptime
+    // ─────────────────────────────────────────────────────────────────────
 
     FileView {
         id: uptimeFile
         path: "/proc/uptime"
-        watchChanges: false
+        onLoaded: root._parseUptime()
     }
 
     Timer {
-        interval: 60000  // update uptime display every minute
+        interval: 60000
         running: true
         repeat: true
-        triggeredOnStart: true
-        onTriggered: {
-            uptimeFile.reload()
-            root._parseUptime()
-        }
+        onTriggered: uptimeFile.reload()
     }
 
     property string uptimeStr: ""
-    property string _uptimeStr: ""
-    Binding { target: root; property: "uptimeStr"; value: root._uptimeStr }
 
     function _parseUptime() {
-        var v = parseFloat(uptimeFile.text().split(" ")[0])
+        var text = uptimeFile.text()
+        if (!text) return
+        var v = parseFloat(text.split(" ")[0])
         if (isNaN(v)) return
+
         var d = Math.floor(v / 86400)
         var h = Math.floor((v % 86400) / 3600)
         var m = Math.floor((v % 3600) / 60)
-        if (d > 0)      _uptimeStr = d + "d " + h + "h " + m + "m"
-        else if (h > 0) _uptimeStr = h + "h " + m + "m"
-        else            _uptimeStr = m + "m"
+
+        if (d > 0)      uptimeStr = d + "d " + h + "h " + m + "m"
+        else if (h > 0) uptimeStr = h + "h " + m + "m"
+        else            uptimeStr = m + "m"
     }
 }
