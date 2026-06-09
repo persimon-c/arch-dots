@@ -10,7 +10,7 @@
 //
 // UI components (NotificationPopup, NotificationCenter) bind to these lists.
 // They never interact with NotificationServer directly.
-
+pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
