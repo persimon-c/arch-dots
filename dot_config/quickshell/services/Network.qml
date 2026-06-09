@@ -1,157 +1,346 @@
 // services/Network.qml — Network status service
-// Exposes the primary wifi device and wired device separately.
-// The bar pill only needs: connected, ssid, signalStrength, wifiEnabled.
-// The network dropdown needs: available networks list, scan, connect/disconnect.
+// Uses nmcli via Process for full control over scanning, connecting, and known networks.
+// Quickshell.Networking is not used — nmcli gives us everything we need.
 
-import Quickshell
-import Quickshell.Networking
+pragma Singleton
+
 import QtQuick
+import Quickshell
+import Quickshell.Io
 
 Singleton {
     id: root
 
-    // ── Device discovery ──────────────────────────────────────────────────
-    // Walk Networking.devices once and cache the first wifi + wired device.
-    // Re-runs whenever the devices list changes (hotplug).
+    // ── Public state ──────────────────────────────────────────────────────
 
-    property WifiDevice  _wifi:  null
-    property WiredDevice _wired: null
+    property bool   wifiEnabled:      true
+    property bool   wifiConnected:    false
+    property bool   wiredConnected:   false
+    property string ssid:             ""
+    property int    signalInt:        0   // 0–100
+    property var    networks:         []  // [ { ssid, signal, security, known } ]
+    property var    knownSSIDs:       []
+    property bool   scanning:         scanProc.running
+    property bool   connecting:       false
+    property string connectError:     ""
 
-    function _findDevices() {
-        var wifi  = null
-        var wired = null
-        for (var i = 0; i < Networking.devices.count; i++) {
-            var dev = Networking.devices.values[i]
-            if (!wifi  && dev.type === DeviceType.Wifi)  wifi  = dev
-            if (!wired && dev.type === DeviceType.Wired) wired = dev
-            if (wifi && wired) break
-        }
-        _wifi  = wifi
-        _wired = wired
-    }
-
-    Connections {
-        target: Networking.devices
-        function onObjectInsertedPost() { root._findDevices() }
-        function onObjectRemovedPost()  { root._findDevices() }
-    }
-
-    // ── Wifi — availability ───────────────────────────────────────────────
-
-    readonly property bool wifiAvailable:       _wifi !== null
-    readonly property bool wifiEnabled:         Networking.wifiEnabled
-    readonly property bool wifiHardwareEnabled: Networking.wifiHardwareEnabled
-
-    // ── Wifi — current connection ─────────────────────────────────────────
-
-    readonly property bool wifiConnected: wifiAvailable && _wifi.connected
-
-    // The active WifiNetwork — whichever network on the device is connected.
-    readonly property WifiNetwork activeNetwork: {
-        if (!wifiAvailable) return null
-        for (var i = 0; i < _wifi.networks.count; i++) {
-            var n = _wifi.networks.values[i]
-            if (n.connected) return n
-        }
-        return null
-    }
-
-    readonly property string ssid:          activeNetwork !== null ? activeNetwork.name           : ""
-    readonly property real   signalStrength: activeNetwork !== null ? activeNetwork.signalStrength : 0.0
-
-    // Signal as 0–100 integer for display / icon tier
-    readonly property int    signalInt:     Math.round(signalStrength * 100)
-
-    // Icon tier: excellent ≥75, good ≥50, fair ≥25, weak <25
-    readonly property string signalLevel: {
-        if (!wifiConnected)    return "none"
-        if (signalInt >= 75)   return "excellent"
-        if (signalInt >= 50)   return "good"
-        if (signalInt >= 25)   return "fair"
-        return "weak"
-    }
-
-    // Security — for showing the lock icon in the dropdown
-    readonly property var wifiSecurity: activeNetwork !== null ? activeNetwork.security : null
-
-    // ── Wifi — available networks (for dropdown) ──────────────────────────
-
-    // The full networks list on the wifi device — bind this in the dropdown.
-    readonly property var availableNetworks: wifiAvailable ? _wifi.networks : null
-
-    // Whether a scan is currently running
-    readonly property bool scanning: wifiAvailable && _wifi.scannerEnabled
-
-    // ── Wifi — actions ────────────────────────────────────────────────────
-
-    function enableWifi()  { Networking.wifiEnabled = true  }
-    function disableWifi() { Networking.wifiEnabled = false }
-    function toggleWifi()  { Networking.wifiEnabled = !Networking.wifiEnabled }
-
-    function startScan() {
-        if (wifiAvailable) _wifi.scannerEnabled = true
-    }
-
-    function stopScan() {
-        if (wifiAvailable) _wifi.scannerEnabled = false
-    }
-
-    // Connect to a WifiNetwork. Tries saved credentials first;
-    // if connectionFailed fires with NoSecrets, caller must supply PSK.
-    function connectNetwork(network) {
-        if (network) network.connect()
-    }
-
-    function connectWithPsk(network, psk) {
-        if (network) network.connectWithPsk(psk)
-    }
-
-    function disconnectNetwork(network) {
-        if (network) network.disconnect()
-    }
-
-    function forgetNetwork(network) {
-        if (network) network.forget()
-    }
-
-    // ── Wired ─────────────────────────────────────────────────────────────
-
-    readonly property bool wiredAvailable: _wired !== null
-    readonly property bool wiredConnected: wiredAvailable && _wired.connected
-    readonly property bool wiredHasLink:   wiredAvailable && _wired.hasLink
-
-    // ── Combined state — for bar pill ─────────────────────────────────────
-    // Single property the bar pill binds to decide which icon/text to show.
+    // ── Derived ───────────────────────────────────────────────────────────
 
     readonly property bool isConnected: wifiConnected || wiredConnected
 
-    // "wifi" | "wired" | "none"
     readonly property string connectionType: {
         if (wifiConnected)  return "wifi"
         if (wiredConnected) return "wired"
         return "none"
     }
 
-    // Human-readable label for the bar pill
     readonly property string label: {
-        if (wifiConnected)  return ssid
-        if (wiredConnected) return "Wired"
-        if (!wifiEnabled)   return "Wi-Fi off"
+        if (wiredConnected)  return "Wired"
+        if (wifiConnected)   return ssid
+        if (!wifiEnabled)    return "Wi-Fi off"
         return "Disconnected"
     }
 
-    // ── Connectivity ──────────────────────────────────────────────────────
-
-    readonly property var connectivity: Networking.connectivity
-
-    function checkConnectivity() {
-        Networking.checkConnectivity()
+    readonly property string signalLevel: {
+        if (!wifiConnected)   return "none"
+        if (signalInt >= 80)  return "excellent"
+        if (signalInt >= 60)  return "good"
+        if (signalInt >= 40)  return "fair"
+        if (signalInt >= 20)  return "weak"
+        return "none"
     }
 
-    // ── Debug ─────────────────────────────────────────────────────────────
+    // ── Internal scan state ───────────────────────────────────────────────
+
+    property bool _isHardwareScan: false
+
+    // ── Public functions ──────────────────────────────────────────────────
+
+    function checkState() {
+        stateProc.running  = false
+        stateProc.running  = true
+        wifiStatusProc.running = false
+        wifiStatusProc.running = true
+        if (!knownProc.running) knownProc.running = true
+    }
+
+    function refresh() {
+        checkState()
+        if (!scanProc.running) {
+            root._isHardwareScan = false
+            scanProc.command = ["nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL,SECURITY",
+                                "dev", "wifi", "list", "--rescan", "no"]
+            scanProc.running = true
+        }
+    }
+
+    function startScan() {
+        if (scanProc.running && !root._isHardwareScan) scanProc.running = false
+        if (!scanProc.running) {
+            root._isHardwareScan = true
+            scanProc.command = ["nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL,SECURITY",
+                                "dev", "wifi", "list", "--rescan", "yes"]
+            scanProc.running = true
+        }
+    }
+
+    function stopScan() {
+        loopTimer.stop()
+    }
+
+    function enableWifi()  {
+        Quickshell.execDetached(["nmcli", "radio", "wifi", "on"])
+        wifiEnabled = true
+        rescanTimer.start()
+    }
+
+    function disableWifi() {
+        Quickshell.execDetached(["nmcli", "radio", "wifi", "off"])
+        wifiEnabled = false
+        ssid = ""
+        signalInt = 0
+        networks = []
+    }
+
+    function toggleWifi() {
+        if (wifiEnabled) disableWifi()
+        else             enableWifi()
+    }
+
+    function connectNetwork(ssidStr, password) {
+        var pw = password || ""
+        connecting   = true
+        connectError = ""
+        connectProc.targetSsid = ssidStr
+        connectProc.pw         = pw
+        connectProc.running    = false
+        connectProc.running    = true
+    }
+
+    function disconnectNetwork() {
+        Quickshell.execDetached(["nmcli", "dev", "disconnect", "wlan0"])
+    }
+
+    function forgetNetwork(ssidStr) {
+        Quickshell.execDetached(["nmcli", "connection", "delete", ssidStr])
+    }
+
+    // ── nmcli monitor — reacts to connection changes ──────────────────────
+
+    Process {
+        id: monitorProc
+        command: ["nmcli", "monitor"]
+        running: true
+        stdout: SplitParser {
+            onRead: function(line) { root.checkState() }
+        }
+    }
+
+    // ── wifi radio state ──────────────────────────────────────────────────
+
+    Process {
+        id: wifiStatusProc
+        command: ["nmcli", "radio", "wifi"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.wifiEnabled = (text || "").trim() === "enabled"
+            }
+        }
+    }
+
+    // ── device connection state ───────────────────────────────────────────
+
+    Process {
+        id: stateProc
+        command: ["nmcli", "-t", "-f", "TYPE,STATE,CONNECTION", "dev"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var lines = (text || "").trim().split("\n")
+                var hasWifi    = false
+                var hasEth     = false
+                var activeConn = ""
+                for (var i = 0; i < lines.length; i++) {
+                    var parts = lines[i].split(":")
+                    if (parts.length < 2) continue
+                    var type  = parts[0].trim()
+                    var state = parts[1].trim()
+                    if (state.indexOf("connected") !== -1) {
+                        if (type === "wifi") {
+                            hasWifi    = true
+                            activeConn = parts.length > 2 ? parts[2].trim() : ""
+                        } else if (type === "ethernet") {
+                            hasEth = true
+                        }
+                    }
+                }
+                root.wifiConnected  = hasWifi
+                root.wiredConnected = hasEth
+                root.ssid           = activeConn
+            }
+        }
+    }
+
+    // ── wifi scan ─────────────────────────────────────────────────────────
+
+    Process {
+        id: scanProc
+        command: ["nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL,SECURITY",
+                  "dev", "wifi", "list", "--rescan", "no"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root._parseNetworks(text)
+                if (root.wifiEnabled) loopTimer.start()
+            }
+        }
+    }
+
+    Timer {
+        id: loopTimer
+        interval: 4000
+        repeat:   false
+        onTriggered: {
+            if (root.wifiEnabled) root.startScan()
+        }
+    }
+
+    Timer {
+        id: rescanTimer
+        interval: 1000
+        onTriggered: root.startScan()
+    }
+
+    // ── known connections ─────────────────────────────────────────────────
+
+    Process {
+        id: knownProc
+        command: ["nmcli", "-t", "-f", "NAME,TYPE", "con", "show"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var lines = (text || "").trim().split("\n")
+                var ssids = []
+                for (var i = 0; i < lines.length; i++) {
+                    var parts = lines[i].split(":")
+                    if (parts.length >= 2 && parts[1].trim() === "802-11-wireless")
+                        ssids.push(parts[0].trim())
+                }
+                root.knownSSIDs = ssids
+            }
+        }
+    }
+
+    // ── connect ───────────────────────────────────────────────────────────
+
+    Process {
+        id: connectProc
+        property string targetSsid: ""
+        property string pw:         ""
+
+        command: pw !== ""
+            ? ["nmcli", "dev", "wifi", "connect", targetSsid, "password", pw]
+            : ["nmcli", "dev", "wifi", "connect", targetSsid]
+
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.connecting = false
+                var out = (text || "").toLowerCase()
+                if (out.indexOf("error") !== -1) {
+                    root.connectError = (out.indexOf("secrets") !== -1 ||
+                                         out.indexOf("password") !== -1)
+                                            ? "Password required"
+                                            : "Connection failed"
+                } else {
+                    root.connectError = ""
+                    root.refresh()
+                }
+            }
+        }
+    }
+
+    // ── background refresh ────────────────────────────────────────────────
+
+    Timer {
+        interval: 30000
+        running:  true
+        repeat:   true
+        onTriggered: root.refresh()
+    }
+
+    // ── parse nmcli scan output ───────────────────────────────────────────
+
+    function _parseNetworks(rawText) {
+        var lines = (rawText || "").trim().split("\n")
+        var nets        = []
+        var foundActive = false
+
+        for (var i = 0; i < lines.length; i++) {
+            var parts = lines[i].split(":")
+            if (parts.length < 4) continue
+
+            var active = parts[0].trim() === "yes"
+            var sig    = parseInt(parts[parts.length - 2]) || 0
+            var sec    = parts[parts.length - 1].trim()
+            var name   = parts.slice(1, parts.length - 2).join(":").trim()
+
+            if (name === "") continue
+
+            if (active) {
+                root.ssid      = name
+                root.signalInt = sig
+                foundActive    = true
+            } else {
+                var exists = false
+                for (var j = 0; j < nets.length; j++) {
+                    if (nets[j].ssid === name) {
+                        if (sig > nets[j].signal) {
+                            nets[j].signal   = sig
+                            nets[j].security = sec
+                        }
+                        exists = true
+                        break
+                    }
+                }
+                if (!exists) {
+                    nets.push({
+                        ssid:     name,
+                        signal:   sig,
+                        security: sec,
+                        known:    root.knownSSIDs.indexOf(name) !== -1
+                    })
+                }
+            }
+        }
+
+        if (!foundActive) {
+            root.signalInt = 0
+            if (root._isHardwareScan) root.ssid = ""
+        }
+
+        nets.sort(function(a, b) { return b.signal - a.signal })
+
+        // Only reassign if something changed
+        if (root.networks.length !== nets.length) {
+            root.networks = nets
+        } else {
+            var changed = false
+            for (var k = 0; k < nets.length; k++) {
+                if (nets[k].ssid   !== root.networks[k].ssid   ||
+                    nets[k].signal !== root.networks[k].signal  ||
+                    nets[k].known  !== root.networks[k].known) {
+                    changed = true
+                    break
+                }
+            }
+            if (changed) root.networks = nets
+        }
+    }
+
     Component.onCompleted: {
-        _findDevices()
-        console.log("Network: service ready — wifi:", wifiAvailable, "| wired:", wiredAvailable)
-        console.log("Network: connected:", isConnected, "| type:", connectionType, "| label:", label)
+        root.checkState()
+        root.startScan()
     }
 }
