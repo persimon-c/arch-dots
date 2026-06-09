@@ -2,7 +2,7 @@
 // Wraps the default adapter and exposes connected devices.
 // The bar pill needs: enabled, connectedCount, primary device name/icon.
 // The dropdown needs: all devices list, connect/disconnect/pair/forget.
-
+pragma Singleton
 import Quickshell
 import Quickshell.Bluetooth
 import QtQuick
