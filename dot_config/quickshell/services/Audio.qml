@@ -3,7 +3,7 @@
 // PwObjectTracker binds both nodes so volume/mute properties are valid.
 // Sink/source may briefly be null when the default changes — all reads
 // are null-guarded so nothing downstream crashes during that window.
-
+pragma Singleton
 import Quickshell
 import Quickshell.Services.Pipewire
 import QtQuick
