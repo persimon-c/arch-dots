@@ -3,7 +3,7 @@
 // Active player priority: Playing > Paused > Stopped > first in list.
 // Manual override via setActivePlayer() for the multi-player dropdown.
 // All controls are guarded by the relevant canXyz properties per the docs.
-
+pragma Singleton
 import Quickshell
 import Quickshell.Services.Mpris
 import QtQuick
@@ -22,7 +22,7 @@ Singleton {
     // Re-evaluates whenever the players list or any player's state changes.
 
     // Set by setActivePlayer() — cleared automatically when that player disappears
-    property MprisPlayer _manualPlayer: null
+    property var _manualPlayer: null
 
     Connections {
         target: Mpris.players
@@ -31,23 +31,43 @@ Singleton {
         }
     }
 
+    // Track player state changes to ensure activePlayer re-evaluates
+    // This forces the activePlayer computed property to update when any player's state changes
+    Connections {
+        target: Mpris.players
+        function onObjectInserted(index, obj) {
+            // Re-evaluate active player when a new player connects
+            root.activePlayer
+        }
+        function onCountChanged() {
+            // Re-evaluate when player count changes
+            root.activePlayer
+        }
+    }
+
+    // Safe player list — handles different MPRIS implementations
+    readonly property var playerList: {
+        if (!Mpris.players) return []
+        return Mpris.players.values || Mpris.players
+    }
+
     readonly property MprisPlayer activePlayer: {
         if (_manualPlayer !== null) return _manualPlayer;
-        if (!Mpris.players || Mpris.players.values.length === 0) return null;
+        if (!playerList || playerList.length === 0) return null;
 
         var playing = null;
         var paused  = null;
         var stopped = null;
 
-        for (var i = 0; i < Mpris.players.values.length; i++) {
-            var p = Mpris.players.values[i];
+        for (var i = 0; i < playerList.length; i++) {
+            var p = playerList[i];
             if (!p) continue;
             if (!playing && p.playbackState === MprisPlaybackState.Playing) playing = p;
-            if (!paused  && p.playbackState === MprisPlaybackState.Paused)  paused  = p;
+            if (!paused && p.playbackState === MprisPlaybackState.Paused) paused = p;
             if (!stopped && p.playbackState === MprisPlaybackState.Stopped) stopped = p;
         }
 
-        return playing || paused || stopped || Mpris.players.values[0] || null;
+        return playing || paused || stopped || playerList[0] || null;
     }
 
     // ── Active player state ───────────────────────────────────────────────
@@ -146,8 +166,11 @@ Singleton {
     }
 
     function setPosition(secs) {
-        if (activePlayer && canSeek && positionSupported)
-            activePlayer.position = secs
+        if (activePlayer && canSeek && positionSupported) {
+            // Bounds check to prevent out-of-range seeks
+            var bounded = Math.max(0, Math.min(secs, activePlayer.length || secs))
+            activePlayer.position = bounded
+        }
     }
 
     function toggleShuffle() {
@@ -171,6 +194,19 @@ Singleton {
 
     function clearActivePlayer() {
         _manualPlayer = null
+    }
+
+    // Comprehensive debug function for troubleshooting
+    function debugState() {
+        console.log("=== Media Debug ===")
+        console.log("Has players:", hasPlayers)
+        console.log("Player count:", playerList.length)
+        console.log("Manual player:", _manualPlayer ? _manualPlayer.identity : "none")
+        console.log("Active player:", activePlayer ? activePlayer.identity : "none")
+        console.log("State:", isPlaying ? "playing" : isPaused ? "paused" : "stopped")
+        console.log("Track:", artist, "-", title)
+        console.log("Position/Length:", getPositionStr(), "/", lengthStr)
+        console.log("Capabilities - Play:", canPlay, "Pause:", canPause, "Next:", canGoNext, "Prev:", canGoPrevious, "Seek:", canSeek)
     }
 
     // ── Debug ─────────────────────────────────────────────────────────────
