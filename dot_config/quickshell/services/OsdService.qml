@@ -29,7 +29,7 @@
 //   activelayout>>KEYBOARDNAME,LAYOUTNAME
 //   parse(2) gives [keyboardName, layoutName] — keyboard name is ignored,
 //   only layoutName is surfaced to the OSD.
-
+pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
