@@ -23,13 +23,21 @@ hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
 
+-- Dark mode preference
+hl.env("GTK_THEME", "Adwaita:dark")
+hl.env("QT_STYLE_OVERRIDE", "kvantum-dark")
+
 -- GTK / SDL
 hl.env("GDK_BACKEND", "wayland,x11,*")
 hl.env("SDL_VIDEODRIVER", "wayland")
 
 -- Cursor
+hl.env("HYPRCURSOR_THEME", "Nordzy-hyprcursors-catppuccin-mocha-mauve")
+hl.env("HYPRCURSOR_SIZE", "24")
+
+-- XCursor fallback for GTK/XWayland apps
+hl.env("XCURSOR_THEME", "catppuccin-mocha-mauve-cursors")
 hl.env("XCURSOR_SIZE", "24")
-hl.env("XCURSOR_THEME", "catppuccin-mocha-dark-cursors")
 
 -- Flatpak data dirs
 hl.env("XDG_DATA_DIRS", "/var/lib/flatpak/exports/share:" .. os.getenv("HOME") .. "/.local/share/flatpak/exports/share:/usr/local/share:/usr/share")
