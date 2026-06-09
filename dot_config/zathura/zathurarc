@@ -1,40 +1,31 @@
-# Zathura — Catppuccin Mocha + dynamic accent
-# Accent updated by wallpaper-change.sh
+# ~/.config/matugen/templates/zathura.conf
+# Matugen template — writes ~/.config/zathura/zathurarc on wallpaper change.
+# Add your other zathura settings after these color lines.
 
-# Colors
-set default-bg                  "#1e1e2e"
-set default-fg                  "#cdd6f4"
-set statusbar-bg                "#181825"
-set statusbar-fg                "#cdd6f4"
-set inputbar-bg                 "#181825"
-set inputbar-fg                 "#cdd6f4"
-set notification-bg             "#181825"
-set notification-fg             "#cdd6f4"
-set notification-error-bg       "#181825"
-set notification-error-fg       "#f38ba8"
-set notification-warning-bg     "#181825"
-set notification-warning-fg     "#fab387"
-set highlight-color             "#ffb2be"
-set highlight-active-color      "#ffb2be"
-set completion-bg               "#313244"
-set completion-fg               "#cdd6f4"
-set completion-highlight-bg     "#45475a"
-set completion-highlight-fg     "#ffb2be"
-set recolor-lightcolor          "#1e1e2e"
-set recolor-darkcolor           "#cdd6f4"
+set default-bg             "#181115"
+set default-fg             "#eddfe3"
 
-# UI
-set font                        "JetBrains Mono Nerd Font 11"
-set statusbar-h-padding         8
-set statusbar-v-padding         4
-set guioptions                  ""
-set recolor                     "true"
+set statusbar-bg           "#251d21"
+set statusbar-fg           "#eddfe3"
 
-# Behavior
-set scroll-step                 50
-set zoom-min                    10
-set zoom-max                    1000
-set adjust-open                 "best-fit"
-set pages-per-row               1
-set render-loading              "true"
-set highlight-transparency 0.8
+set inputbar-bg            "#30282b"
+set inputbar-fg            "#eddfe3"
+
+set notification-bg        "#30282b"
+set notification-fg        "#eddfe3"
+set notification-error-bg  "#ffb4ab"
+set notification-error-fg  "#690005"
+set notification-warning-bg "#f3ba9b"
+set notification-warning-fg "#181115"
+
+set highlight-color        "#6c3454"
+set highlight-active-color "#fcb0d6"
+
+set completion-bg          "#251d21"
+set completion-fg          "#eddfe3"
+set completion-highlight-bg "#fcb0d6"
+set completion-highlight-fg "#511d3c"
+
+set recolor                "false"
+set recolor-lightcolor     "#181115"
+set recolor-darkcolor      "#eddfe3"
