@@ -8,11 +8,10 @@ hl.config({
         mouse_move_enables_dpms = true,
         key_press_enables_dpms = true,
         animate_manual_resizes = true,
-        -- animate_mouse_windowdragging = true,  -- commented out in original
+        animate_mouse_windowdragging = true,
         enable_swallow = true,
         swallow_regex = "^(kitty)$",
         focus_on_activate = false,
-        -- vfr = true,  -- commented out in original
         vrr = 0,
     },
 })
