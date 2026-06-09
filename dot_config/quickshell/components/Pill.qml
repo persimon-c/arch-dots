@@ -1,99 +1,51 @@
-// components/Pill.qml
-// Base glassmorphism capsule for all bar pills and containers.
-//
-// Usage:
-//   Pill {
-//     // Place your content inline — it becomes the single visual child.
-//     // Set implicitWidth/implicitHeight on your content, not x/y/width/height.
-//     RowLayout { ... }
-//   }
-//
-// The pill sizes itself to its child via WrapperRectangle (MarginWrapperManager).
-// Implicit size flows child → Pill. Actual size flows parent → Pill → child.
-//
-// Properties to customise per-pill:
-//   horizontalPadding / verticalPadding  — override default padding
-//   bgColor    — background fill (defaults to Theme surface with opacity)
-//   bgOpacity  — background opacity (0.0–1.0)
-//   blurRadius — backdrop blur radius
-//   radius     — corner radius (defaults to Theme.radiusFull for capsule)
-
 import QtQuick
-import QtQuick.Effects
 import Quickshell.Widgets
 import "../theme"
+
+// Base glassmorphism capsule.
+//
+// Sizing: driven entirely by content via WrapperRectangle margins.
+// Hover:  set hovered: someMouseArea.containsMouse from the subtype.
+// Color:  override bgColor for per-pill tinting (e.g. PanelColors.pillBattery).
 
 WrapperRectangle {
     id: root
 
-    // ── Public API ────────────────────────────────────────────────────────
+    function _safeColor(value, fallback) {
+        return (value && value.length > 0) ? value : fallback
+    }
 
+    // ── Padding ───────────────────────────────────────────────────────────
     property real horizontalPadding: Theme.spacingMd
     property real verticalPadding:   Theme.spacingXs
 
-    property color bgColor:   Colors.surfaceContainer
-    property real  bgOpacity: 0.75
-    property real  blurRadius: Theme.blurRadius
-
-    // WrapperRectangle's margin drives the child padding.
-    // Use asymmetric margins for different h/v padding.
     leftMargin:   horizontalPadding
     rightMargin:  horizontalPadding
     topMargin:    verticalPadding
     bottomMargin: verticalPadding
 
-    // Capsule radius — override to Theme.radiusMd for non-pill rectangles
-    radius: Theme.radiusFull
-
-    // ── Visual styling ────────────────────────────────────────────────────
-
-    color: Qt.rgba(
-        root.bgColor.r,
-        root.bgColor.g,
-        root.bgColor.b,
-        root.bgOpacity
-    )
-
-    border.color: Qt.rgba(
-        Colors.outline.r,
-        Colors.outline.g,
-        Colors.outline.b,
-        0.15
-    )
-    border.width: 1
-
-    // Backdrop blur via layer effect
-    layer.enabled: root.blurRadius > 0
-    layer.effect: MultiEffect {
-        source: root
-        blurEnabled:  true
-        blur:         root.blurRadius / 64.0   // MultiEffect blur is 0.0–1.0 normalised
-        blurMax:      64
-        blurMultiplier: 1.0
-    }
-
-    // ── Hover state ───────────────────────────────────────────────────────
+    // ── Appearance ────────────────────────────────────────────────────────
+    property string bgColor:   PanelColors.panelBackground
+    property real   bgOpacity: Theme.opacityBar
 
     property bool hovered: false
 
-    // Subtle brightness lift on hover.
-    // Consumers can connect a MouseArea's entered/exited to this.
-    property real _hoverBrightness: hovered ? 1.06 : 1.0
-
-    Behavior on _hoverBrightness {
-        NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
-    }
-
-    // Apply brightness via saturation overlay trick — just lighten bg opacity slightly
-    // Real brightness shift needs MultiEffect; keep it simple with opacity delta.
-    readonly property real _effectiveOpacity: hovered
-        ? Math.min(1.0, bgOpacity + 0.08)
-        : bgOpacity
+    radius: Theme.radiusFull
 
     color: Qt.rgba(
-        root.bgColor.r,
-        root.bgColor.g,
-        root.bgColor.b,
-        root._effectiveOpacity
+        Qt.color(root._safeColor(bgColor, "#181825")).r,
+        Qt.color(root._safeColor(bgColor, "#181825")).g,
+        Qt.color(root._safeColor(bgColor, "#181825")).b,
+        hovered ? Math.min(1.0, bgOpacity + 0.08) : bgOpacity
     )
+
+    Behavior on color { ColorAnimation { duration: Theme.durationFast } }
+
+    border.color: Qt.rgba(
+        Qt.color(root._safeColor(PanelColors.border, "#6c7086")).r,
+        Qt.color(root._safeColor(PanelColors.border, "#6c7086")).g,
+        Qt.color(root._safeColor(PanelColors.border, "#6c7086")).b,
+        0.18
+    )
+    border.width: 1
 }
