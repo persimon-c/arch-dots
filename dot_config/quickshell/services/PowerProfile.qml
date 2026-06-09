@@ -6,7 +6,7 @@
 // NOTE: Requires power-profiles-daemon to be installed and running.
 //       UPower alone is NOT sufficient — they are separate packages.
 //       If the daemon is absent, PowerProfiles properties will be undefined/null.
-
+pragma Singleton
 import QtQuick
 import Quickshell.Services.UPower
 
