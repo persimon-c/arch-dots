@@ -10,12 +10,6 @@ hl.window_rule({ match = { class = "blueman-manager" },      float = true, cente
 hl.window_rule({ match = { class = "org.gnome.Calculator" }, float = true, center = true })
 hl.window_rule({ match = { class = "hyprpicker" },           float = true, center = true })
 
--- ── App Workspace Assignments ────────────────────────────────────────────────
-
-hl.window_rule({ match = { class = "brave-browser" },        workspace = "2" })
-hl.window_rule({ match = { class = "discord" },              workspace = "4" })
-hl.window_rule({ match = { class = "com.discordapp.Discord" }, workspace = "4" })
-
 -- ── Float + Fixed Size (when switched to floating) ───────────────────────────
 
 -- kitty
@@ -25,7 +19,8 @@ hl.window_rule({ match = { class = "kitty", float = true }, size = { 800, 500 },
 hl.window_rule({ match = { class = "thunar", float = true }, size = { 900, 600 }, center = true })
 
 -- imv
-hl.window_rule({ match = { class = "imv", float = true }, size = { 1000, 700 }, center = true })
+hl.window_rule({ match = { class = "imv" }, float = true, center = true })
+hl.window_rule({ match = { class = "imv" }, max_size = { 800, 600 } })
 
 -- mpv
 hl.window_rule({ match = { class = "mpv", float = true }, size = { 1280, 720 }, center = true })
@@ -38,5 +33,19 @@ hl.window_rule({ match = { class = "com.spotify.Client", float = true }, size = 
 
 -- ── Layer Rules (Quickshell) ─────────────────────────────────────────────────
 
--- Enable blur for Quickshell panels
-hl.layer_rule({ match = { namespace = "quickshell" }, blur = true, ignore_alpha = 0.5 })
+-- Enable blur for all Quickshell panels (regex matches quickshell-bar, quickshell-*, etc.)
+hl.layer_rule({ match = { namespace = "quickshell.*" }, blur = true, ignore_alpha = 0.5 })
+
+
+-- ── Forced Opaque (blur/transparency on these is just noise + GPU waste) ────
+
+hl.window_rule({ match = { class = "mpv" },                   opacity = 1.0 })
+hl.window_rule({ match = { class = "imv" },                   opacity = 1.0 })
+hl.window_rule({ match = { class = "com.spotify.Client" },    opacity = 1.0 })
+hl.window_rule({ match = { class = "brave-browser" },         opacity = 1.0 })
+hl.window_rule({ match = { class = "com.obsproject.Studio" }, opacity = 1.0 })
+
+-- ── Browser Auth Popups ──────────────────────────────────────────────────────
+
+-- Google OAuth — matches "Sign in - Google Accounts - Brave", "Choose an account - Google Accounts - Brave", etc.
+hl.window_rule({ match = { initial_title = "Untitled - Brave", initial_class = "brave-browser" }, float = true, center = true, size = { 500, 620 }, workspace = "current" })
