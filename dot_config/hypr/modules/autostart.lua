@@ -32,7 +32,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
 
     -- Cursor
-    hl.exec_cmd("hyprctl setcursor catppuccin-mocha-dark-cursors 24")
+    hl.exec_cmd("hyprctl setcursor Nordzy-cursors 24")
 
     -- Quickshell overview (AMD GPU forced, 3s delay for compositor readiness)
     -- TODO: verify if this is still needed once main quickshell line above is stable
