@@ -22,7 +22,7 @@
 // Note: inotifywait watches the db file's parent directory because the db
 //       file is replaced atomically by cliphist (rename), which inotifywait
 //       on the file itself would miss after the first write.
-
+pragma Singleton
 import QtQuick
 import QtCore
 import Quickshell
