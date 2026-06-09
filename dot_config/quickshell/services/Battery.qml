@@ -3,9 +3,10 @@
 // aggregate device intended for exactly this purpose (DE battery display).
 // Falls back gracefully when no battery is present (desktop systems).
 
+pragma Singleton
+
 import Quickshell
 import Quickshell.Services.UPower
-import QtQuick
 
 Singleton {
     id: root
@@ -19,7 +20,7 @@ Singleton {
 
     // True once UPower has initialised and a battery is actually present.
     // UI components should check this before showing battery widgets.
-    readonly property bool available: _dev.ready && _dev.isLaptopBattery
+    readonly property bool available: _dev.ready && _dev.percentage > 0
 
     // True if the system is drawing from battery (not plugged in).
     readonly property bool onBattery: UPower.onBattery
@@ -30,8 +31,8 @@ Singleton {
     readonly property real percentage: available ? _dev.percentage : 0.0
 
     // Rounded integer for display (e.g. "74%")
-    readonly property int  percentInt: Math.round(percentage)
-
+    readonly property int  percentInt: Math.round(percentage * 100)
+    
     // ── State ─────────────────────────────────────────────────────────────
 
     readonly property int state: available ? _dev.state : UPowerDeviceState.Unknown
@@ -85,13 +86,5 @@ Singleton {
         if (percentInt >= 30)   return "medium"
         if (percentInt >= 10)   return "low"
         return "critical"
-    }
-
-    // ── Debug ─────────────────────────────────────────────────────────────
-    Component.onCompleted: {
-        console.log("Battery: service ready — available:", available)
-        if (available) {
-            console.log("Battery:", percentInt + "%", "state:", UPowerDeviceState.toString(state))
-        }
     }
 }
