@@ -2,7 +2,7 @@
 // Reads from sysfs via FileView (watchChanges) — zero polling, kernel-driven updates.
 // Writes via brightnessctl (execDetached) — keeps brightnessctl as the system authority.
 // The sysfs watcher picks up writes automatically regardless of source (keybind, slider, OSD).
-
+pragma Singleton
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -76,6 +76,7 @@ Singleton {
 
     // ── Debug ─────────────────────────────────────────────────────────────
     Component.onCompleted: {
+        brightnessFile.reload()  // Force initial read
         console.log("Brightness: service ready — max:", _maxRaw,
                     "| current:", _currentRaw,
                     "| percent:", percentInt + "%")
