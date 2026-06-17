@@ -35,7 +35,7 @@ Singleton {
         id: brightnessFile
         path: root._backlightDir + "brightness"
         watchChanges: true
-        onFileChanged: this.reload()
+        onFileChanged: reload()
         onLoaded: root._update()
         onLoadFailed: console.warn("Brightness: failed to read brightness")
     }
