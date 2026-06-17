@@ -5,6 +5,7 @@
 
 pragma Singleton
 
+import QtQuick
 import Quickshell
 
 Singleton {
@@ -12,17 +13,17 @@ Singleton {
     // ── Typography ────────────────────────────────────────────────────────
     // Change fontFamily here to restyle all text in the shell at once.
 
-    readonly property string fontFamily:      "GeistMono Nerd Font"
-    readonly property string fontFamilyMono:  "GeistMono Nerd Font"
+    readonly property string fontFamily:      "JetBrainsMono Nerd Font"
+    readonly property string fontFamilyMono:  "JetBrainsMono Nerd Font"
 
     // Font sizes (px)
-    readonly property int fontSizeXs:   10
-    readonly property int fontSizeSm:   12
-    readonly property int fontSizeMd:   13  // default body
-    readonly property int fontSizeLg:   15
-    readonly property int fontSizeXl:   18
-    readonly property int fontSizeXxl:  24
-    readonly property int fontSizeHero: 48  // lock screen clock, desktop clock
+    readonly property int fontSizeXs:   11
+    readonly property int fontSizeSm:   14
+    readonly property int fontSizeMd:   15  // default body
+    readonly property int fontSizeLg:   17
+    readonly property int fontSizeXl:   20
+    readonly property int fontSizeXxl:  26
+    readonly property int fontSizeHero: 52  // lock screen clock, desktop clock
 
     // Font weights (Qt weight scale: 400 = Normal, 500 = Medium, 600 = SemiBold, 700 = Bold)
     readonly property int fontWeightNormal:   400
@@ -69,10 +70,14 @@ Singleton {
     readonly property real opacityDropdown: 0.85
     readonly property real opacityLock:     0.60
 
-    // ── Animation durations (ms) ──────────────────────────────────────────
+    // ── Animation ─────────────────────────────────────────────────────────
+    readonly property int easingType: Easing.BezierSpline
+    readonly property var easingCurve: [0.0, 0.0, 0.15, 1.0] // loft
+    readonly property var easingCurveIn: [0.0, 0.0, 0.15, 1.0] // loft
+    readonly property var easingCurveOut: [0.4, 0.0, 1.0, 1.0] // throwOut
 
-    readonly property int durationFast:   120
-    readonly property int durationNormal: 200
+    readonly property int durationFast:   150
+    readonly property int durationNormal: 250
     readonly property int durationSlow:   350
 
     // ── Component sizes ───────────────────────────────────────────────────
