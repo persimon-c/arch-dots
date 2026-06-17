@@ -23,6 +23,37 @@ reltime() {
   fi
 }
 
+# ── Language mapping helper ───────────────────────────────────────────────────
+map_lang() {
+  local ext="${1:-}"
+  case "$ext" in
+    qml) echo "QML" ;;
+    js)  echo "JavaScript" ;;
+    ts)  echo "TypeScript" ;;
+    py)  echo "Python" ;;
+    go)  echo "Go" ;;
+    rs)  echo "Rust" ;;
+    cpp|cc|cxx) echo "C++" ;;
+    c)   echo "C" ;;
+    h|hpp)  echo "Header" ;;
+    java) echo "Java" ;;
+    sh)  echo "Shell" ;;
+    lua) echo "Lua" ;;
+    css) echo "CSS" ;;
+    html) echo "HTML" ;;
+    json) echo "JSON" ;;
+    md)  echo "Markdown" ;;
+    yml|yaml) echo "YAML" ;;
+    rb)  echo "Ruby" ;;
+    php) echo "PHP" ;;
+    cs)  echo "C#" ;;
+    swift) echo "Swift" ;;
+    kt)  echo "Kotlin" ;;
+    *)   # Capitalize first letter (bash 4+)
+         echo "${ext^}" ;;
+  esac
+}
+
 # ── Collect repos ─────────────────────────────────────────────────────────────
 # find .git dirs up to depth 3 (meaning repo roots are at depth 1 or 2 under DEV_ROOT)
 REPOS=()
@@ -72,6 +103,34 @@ for REPO_PATH in "${REPOS[@]}"; do
     REMOTE_URL=""
   fi
 
+  # Commits count
+  COMMITS_COUNT=$(git -C "$REPO_PATH" rev-list --count HEAD 2>/dev/null || echo "0")
+
+  # File counts
+  MODIFIED_COUNT=$(git -C "$REPO_PATH" diff --name-only 2>/dev/null | wc -l || echo "0")
+  STAGED_COUNT=$(git -C "$REPO_PATH" diff --cached --name-only 2>/dev/null | wc -l || echo "0")
+  UNTRACKED_COUNT=$(git -C "$REPO_PATH" ls-files --others --exclude-standard 2>/dev/null | wc -l || echo "0")
+
+  # Size
+  REPO_SIZE=$(du -sh "$REPO_PATH" 2>/dev/null | cut -f1 || echo "0B")
+
+  # Active branches & tags count
+  BRANCHES_COUNT=$(git -C "$REPO_PATH" branch --list 2>/dev/null | wc -l || echo "0")
+  TAGS_COUNT=$(git -C "$REPO_PATH" tag 2>/dev/null | wc -l || echo "0")
+
+  # Sync status (ahead/behind tracking branch)
+  AHEAD_COUNT="0"
+  BEHIND_COUNT="0"
+  TRACKING=$(git -C "$REPO_PATH" rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)
+  if [[ -n "$TRACKING" ]]; then
+    AHEAD_COUNT=$(git -C "$REPO_PATH" rev-list --count @{u}..HEAD 2>/dev/null || echo "0")
+    BEHIND_COUNT=$(git -C "$REPO_PATH" rev-list --count HEAD..@{u} 2>/dev/null || echo "0")
+  fi
+
+  # Primary language
+  LANG_EXT=$(find "$REPO_PATH" -maxdepth 3 -type f -not -path '*/.*' -not -path '*/node_modules/*' -not -path '*/vendor/*' -not -path '*/build/*' -not -path '*/dist/*' -not -path '*/.venv/*' 2>/dev/null | grep -E '\.([a-zA-Z0-9]+)$' | awk -F. '{print $NF}' | sort | uniq -c | sort -nr | head -n 1 | awk '{print $2}' || true)
+  PRIMARY_LANG=$(map_lang "$LANG_EXT")
+
   # Escape strings for JSON (jq handles this safely via --arg)
   ENTRY=$(jq -n \
     --arg name       "$NAME" \
@@ -82,6 +141,16 @@ for REPO_PATH in "${REPOS[@]}"; do
     --arg rel        "$LAST_REL" \
     --argjson dirty  "$DIRTY" \
     --arg url        "$REMOTE_URL" \
+    --argjson commits "$COMMITS_COUNT" \
+    --argjson modified "$MODIFIED_COUNT" \
+    --argjson staged   "$STAGED_COUNT" \
+    --argjson untracked "$UNTRACKED_COUNT" \
+    --arg size       "$REPO_SIZE" \
+    --argjson branches "$BRANCHES_COUNT" \
+    --argjson tags     "$TAGS_COUNT" \
+    --argjson ahead    "$AHEAD_COUNT" \
+    --argjson behind   "$BEHIND_COUNT" \
+    --arg lang       "$PRIMARY_LANG" \
     '{
       name:             $name,
       path:             $path,
@@ -90,7 +159,17 @@ for REPO_PATH in "${REPOS[@]}"; do
       last_commit_time: $ts,
       last_commit_rel:  $rel,
       dirty:            $dirty,
-      remote_url:       $url
+      remote_url:       $url,
+      commits_count:    $commits,
+      modified_count:   $modified,
+      staged_count:     $staged,
+      untracked_count:  $untracked,
+      size:             $size,
+      branches_count:   $branches,
+      tags_count:       $tags,
+      ahead_count:      $ahead,
+      behind_count:     $behind,
+      primary_lang:     $lang
     }')
 
   if [[ "$FIRST" == true ]]; then
