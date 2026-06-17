@@ -32,8 +32,8 @@ Item {
 
     property color  arcColor:     Colors.primary
     property color  trackColor:   Colors.surfaceContainerHighest
-    property color  labelColor:   Colors.onSurface
-    property color  valueColor:   Colors.onSurface
+    property color  labelColor:   Colors.onSurfaceColor
+    property color  valueColor:   Colors.onSurfaceColor
 
     property int    labelFontSize: Theme.fontSizeXs
     property int    valueFontSize: Theme.fontSizeSm
@@ -52,7 +52,7 @@ Item {
 
     Behavior on _displayValue {
         enabled: root.animated
-        NumberAnimation { duration: 600; easing.type: Easing.OutCubic }
+        NumberAnimation { duration: 600; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
     }
 
     onValueChanged: _displayValue = root.value
