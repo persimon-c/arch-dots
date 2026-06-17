@@ -1,4 +1,3 @@
-pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.Polkit
@@ -119,41 +118,46 @@ QtObject {
 
         // Default D-Bus path is /org/quickshell/Polkit — no need to override.
 
+        onIsRegisteredChanged: {
+            if (isRegistered) {
+                console.log("[Polkit] agent registered at", path)
+            }
+        }
+
         onAuthenticationRequestStarted: {
             console.log("[Polkit] auth request started — action:", root.actionId)
             root.authRequestStarted()
         }
     }
 
-    // AuthFlow signals — connect via Connections because flow is a property
-    // that can be null, so we must watch the flow object itself.
+    // AuthFlow property changes — connect via Connections because flow is a
+    // property that can be null, so we must watch the flow object itself.
     property Connections _flowConnections: Connections {
         target: agent.flow
 
-        // PAM attempt failed — a new session has already been started by QS
-        function onAuthenticationFailed() {
-            console.log("[Polkit] authentication failed")
-            root.authFailed()
+        // PAM succeeded
+        function onIsSuccessfulChanged() {
+            if (agent.flow && agent.flow.isSuccessful) {
+                console.log("[Polkit] authentication succeeded")
+                root.authSucceeded()
+            }
         }
 
-        // PAM succeeded
-        function onAuthenticationSucceeded() {
-            console.log("[Polkit] authentication succeeded")
-            root.authSucceeded()
+        // PAM attempt failed — a new session has already been started by QS
+        function onFailedChanged() {
+            if (agent.flow && agent.flow.failed) {
+                console.log("[Polkit] authentication failed")
+                root.authFailed()
+            }
         }
 
         // Daemon cancelled the request (not the user)
-        function onAuthenticationRequestCancelled() {
-            console.log("[Polkit] request cancelled by daemon")
-            root.authCancelled()
+        function onIsCancelledChanged() {
+            if (agent.flow && agent.flow.isCancelled) {
+                console.log("[Polkit] request cancelled by daemon")
+                root.authCancelled()
+            }
         }
     }
 
-    Component.onCompleted: {
-        if (agent.isRegistered) {
-            console.log("[Polkit] agent registered at", agent.path)
-        } else {
-            console.warn("[Polkit] agent failed to register — is polkit daemon running?")
-        }
-    }
 }
