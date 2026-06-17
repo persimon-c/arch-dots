@@ -1,3 +1,4 @@
+// Service: osdservice — implemented 2026-06-17
 // services/OsdService.qml
 // OSD aggregator — data only, no UI, no timers.
 //
@@ -64,6 +65,8 @@ Singleton {
     // needing their own IPC handler.
 
     property bool capsLockOn: false
+
+    property alias ipchandler: ipc
 
     // ── Layout state ──────────────────────────────────────────────────────────
 
@@ -183,9 +186,10 @@ Singleton {
     // The IpcHandler receives the message and updates capsLockOn.
 
     IpcHandler {
+        id: ipc
         target: "osd"
 
-        function capslock(state: bool) {
+        function capslock(state: string) {
             // state: "on" | "off" | "toggle"
             let newState
             if (state === "toggle") {
@@ -229,11 +233,19 @@ Singleton {
     // ── Startup log ───────────────────────────────────────────────────────────
 
     Component.onCompleted: {
-        if (Brightness.percentInt > 0) {
-            root._lastBrightnessInt = Brightness.percentInt
-            root._brightnessReady   = true
-            console.log("[OsdService] Brightness seeded —", Brightness.percentInt + "%")
+        // Seed audio if it is already ready at startup
+        if (Audio.sinkReady) {
+            root._lastVolumeInt = Audio.sinkVolumeInt
+            root._lastMuted     = Audio.sinkMuted
+            root._audioReady    = true
+            console.log("[OsdService] Audio seeded on startup — vol:", Audio.sinkVolumeInt + "%", "muted:", Audio.sinkMuted)
         }
+
+        // Seed brightness unconditionally
+        root._lastBrightnessInt = Brightness.percentInt
+        root._brightnessReady   = true
+        console.log("[OsdService] Brightness seeded unconditionally —", Brightness.percentInt + "%")
+
         console.log("[OsdService] Initialized")
         console.log("[OsdService]   Watching: volume, mute, brightness, capslock (IPC), layout (Hyprland event)")
     }
