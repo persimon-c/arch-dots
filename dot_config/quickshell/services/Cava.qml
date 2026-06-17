@@ -1,3 +1,4 @@
+// Service: cava — implemented 2026-06-17
 pragma Singleton
 import QtQuick
 import Quickshell
@@ -32,7 +33,7 @@ Singleton {
     property var bars: Array(barCount).fill(0.0)
 
     /** Number of bars cava outputs. Change here and in the written config. */
-    readonly property int barCount: 20
+    readonly property int barCount: 10
 
     /** Whether the cava process is currently running */
     readonly property bool running: cavaProcess.running
@@ -62,7 +63,7 @@ Singleton {
         stdout: StdioCollector {
             waitForEnd: true
             onStreamFinished: {
-                const home = this.text.trim()
+                const home = text.trim()
                 if (home.length === 0) {
                     console.error("[Cava] Could not resolve $HOME — aborting")
                     return
@@ -105,7 +106,7 @@ CAVAEOF`
         ]
 
         onRunningChanged: {
-            if (!running) cavaProcess.running = true
+            if (!writeConfig.running) cavaProcess.running = true
         }
     }
 
@@ -149,7 +150,7 @@ CAVAEOF`
 
         // Auto-restart on exit (cava exits on audio device change / pipewire restart)
         onRunningChanged: {
-            if (!running) {
+            if (!cavaProcess.running) {
                 console.log("[Cava] process exited — restarting in 2s")
                 restartTimer.start()
             }
