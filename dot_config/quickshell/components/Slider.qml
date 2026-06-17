@@ -81,7 +81,7 @@ Item {
         Behavior on width {
             // Only animate when not dragging — avoids lag during drag
             enabled: !dragArea.drag.active
-            NumberAnimation { duration: 80; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: 80; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
     }
 
@@ -102,7 +102,7 @@ Item {
         // Scale up on press
         scale: dragArea.drag.active || dragArea.containsMouse ? 1.18 : 1.0
         Behavior on scale {
-            NumberAnimation { duration: 100; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: 100; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
 
         // Halo
@@ -116,7 +116,7 @@ Item {
                    : dragArea.containsMouse ? 0.12
                    : 0
             Behavior on opacity {
-                NumberAnimation { duration: 100 }
+                NumberAnimation { duration: 100 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
             }
         }
     }
