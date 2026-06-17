@@ -1,3 +1,4 @@
+// Service: asusctl — implemented 2026-06-17
 pragma Singleton
 import Quickshell
 import Quickshell.Io
@@ -15,13 +16,12 @@ Singleton {
         setProfileProc.running = true
     }
 
+    // Toggle to next profile in list (Quiet -> Balanced -> Performance)
     function nextProfile() {
         nextProfileProc.running = true
     }
 
     // ─── Aura / RGB ───────────────────────────────────────────────────────────
-    // No query command exists — mode is tracked in-session after next/prev calls.
-    // auraMode starts as "" until the user cycles modes this session.
     // Known modes from `asusctl aura effect --help` subcommands:
     property var auraModes: [
         "static", "breathe", "rainbow-cycle", "rainbow-wave",
@@ -33,14 +33,46 @@ Singleton {
 
     function nextAuraMode() {
         nextAuraProc.running = true
-        _auraModeIndex = (_auraModeIndex + 1) % auraModes.length
-        auraMode = auraModes[_auraModeIndex]
     }
 
     function prevAuraMode() {
         prevAuraProc.running = true
-        _auraModeIndex = (_auraModeIndex - 1 + auraModes.length) % auraModes.length
-        auraMode = auraModes[_auraModeIndex]
+    }
+
+    // Dynamic file-based Aura mode tracking
+    FileView {
+        id: auraConfig
+        path: "/etc/asusd/aura_tuf.ron"
+        watchChanges: true
+        onLoaded: {
+            root._parseAuraConfig(text())
+        }
+        onLoadFailed: {
+            if (path === "/etc/asusd/aura_tuf.ron") {
+                console.log("[AsusCtl] aura_tuf.ron not found, trying aura.ron...")
+                path = "/etc/asusd/aura.ron"
+            } else {
+                console.warn("[AsusCtl] Failed to load both aura_tuf.ron and aura.ron")
+            }
+        }
+    }
+
+    function _parseAuraConfig(content) {
+        const match = content.match(/current_mode:\s*(\w+)/)
+        if (match) {
+            const rawMode = match[1]
+            // Convert CamelCase to kebab-case (e.g. RainbowCycle -> rainbow-cycle)
+            const mode = rawMode.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
+            
+            if (root.auraMode !== mode) {
+                root.auraMode = mode
+                const idx = root.auraModes.indexOf(mode)
+                if (idx !== -1) {
+                    root._auraModeIndex = idx
+                }
+                console.log("[AsusCtl] Aura mode updated from system config:", mode)
+            }
+        }
     }
 
     // ─── Panel Overdrive ──────────────────────────────────────────────────────
@@ -72,10 +104,6 @@ Singleton {
     }
 
     // ─── Query: power profile ─────────────────────────────────────────────────
-    // `asusctl profile get` output:
-    //   Active profile: Quiet
-    //   AC profile Performance
-    //   Battery profile Quiet
     Process {
         id: queryProfileProc
         command: ["asusctl", "profile", "get"]
@@ -109,6 +137,10 @@ Singleton {
         id: nextAuraProc
         command: ["asusctl", "aura", "effect", "--next-mode"]
         running: false
+        onExited: (code, status) => {
+            console.log("[AsusCtl] nextAuraProc exited with code:", code, "status:", status)
+            if (code === 0) auraConfig.reload()
+        }
     }
 
     // ─── Prev: aura mode ─────────────────────────────────────────────────────
@@ -116,15 +148,13 @@ Singleton {
         id: prevAuraProc
         command: ["asusctl", "aura", "effect", "--prev-mode"]
         running: false
+        onExited: (code, status) => {
+            console.log("[AsusCtl] prevAuraProc exited with code:", code, "status:", status)
+            if (code === 0) auraConfig.reload()
+        }
     }
 
     // ─── Query: panel overdrive ───────────────────────────────────────────────
-    // `asusctl armoury get panel_overdrive` output:
-    //   panel_overdrive:
-    //     current: [0,(1)]
-    // The value in () is the currently active one.
-    // [0,(1)] → active is 1 → overdrive ON
-    // [(0),1] → active is 0 → overdrive OFF
     property string _overdriveBuffer: ""
 
     Process {
