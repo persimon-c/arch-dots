@@ -16,8 +16,8 @@ WrapperRectangle {
     }
 
     // ── Padding ───────────────────────────────────────────────────────────
-    property real horizontalPadding: Theme.spacingMd
-    property real verticalPadding:   Theme.spacingXs
+    property real horizontalPadding: 6
+    property real verticalPadding:   2
 
     leftMargin:   horizontalPadding
     rightMargin:  horizontalPadding
@@ -30,7 +30,7 @@ WrapperRectangle {
 
     property bool hovered: false
 
-    radius: Theme.radiusFull
+    radius: 5
 
     color: Qt.rgba(
         Qt.color(root._safeColor(bgColor, "#181825")).r,
@@ -39,7 +39,7 @@ WrapperRectangle {
         hovered ? Math.min(1.0, bgOpacity + 0.08) : bgOpacity
     )
 
-    Behavior on color { ColorAnimation { duration: Theme.durationFast } }
+    Behavior on color { ColorAnimation { duration: Theme.durationFast ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve } }
 
     border.color: Qt.rgba(
         Qt.color(root._safeColor(PanelColors.border, "#6c7086")).r,
