@@ -15,7 +15,7 @@ Singleton {
 
     readonly property var players: Mpris.players
 
-    readonly property bool hasPlayers: Mpris.players.count > 0
+    readonly property bool hasPlayers: playerList.length > 0
 
     // ── Active player selection ───────────────────────────────────────────
     // Manual override takes priority. Otherwise: Playing > Paused > Stopped > first.
@@ -31,24 +31,10 @@ Singleton {
         }
     }
 
-    // Track player state changes to ensure activePlayer re-evaluates
-    // This forces the activePlayer computed property to update when any player's state changes
-    Connections {
-        target: Mpris.players
-        function onObjectInserted(index, obj) {
-            // Re-evaluate active player when a new player connects
-            root.activePlayer
-        }
-        function onCountChanged() {
-            // Re-evaluate when player count changes
-            root.activePlayer
-        }
-    }
-
     // Safe player list — handles different MPRIS implementations
     readonly property var playerList: {
         if (!Mpris.players) return []
-        return Mpris.players.values || Mpris.players
+        return Mpris.players.values || []
     }
 
     readonly property MprisPlayer activePlayer: {
@@ -211,7 +197,7 @@ Singleton {
 
     // ── Debug ─────────────────────────────────────────────────────────────
     Component.onCompleted: {
-        console.log("Media: service ready — players:", Mpris.players.count)
+        console.log("Media: service ready — players:", playerList.length)
         if (activePlayer) {
             console.log("Media: active:", playerName, "—", artist, "–", title)
         }
