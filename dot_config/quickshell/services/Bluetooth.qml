@@ -17,7 +17,7 @@ Singleton {
     readonly property bool adapterAvailable: _adapter !== null
 
     // Enabled state — writable, toggles the adapter on/off
-    readonly property bool enabled: adapterAvailable && _adapter.enabled
+    readonly property bool enabled: adapterAvailable ? _adapter.enabled : false
 
     function setEnabled(on) {
         if (adapterAvailable) _adapter.enabled = on
@@ -28,7 +28,7 @@ Singleton {
     }
 
     // Whether the adapter is currently scanning for new devices
-    readonly property bool discovering: adapterAvailable && _adapter.discovering
+    readonly property bool discovering: adapterAvailable ? _adapter.discovering : false
 
     function startDiscovery() {
         if (adapterAvailable) _adapter.discovering = true
