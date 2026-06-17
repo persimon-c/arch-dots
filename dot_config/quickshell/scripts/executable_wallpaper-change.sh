@@ -49,14 +49,15 @@ echo "$WALLPAPER" > ~/.cache/current_wallpaper_path
 #   → ~/.config/quickshell/theme/colors.json   (Colors.qml FileView picks this up automatically)
 #   → ~/.config/hypr/modules/colors.conf
 #   → ~/.config/kitty/matugen-colors.conf
-#   → ~/.config/gtk-3.0/colors.css
-#   → ~/.config/gtk-4.0/colors.css
+#   → ~/.config/gtk-3.0/colors.css             (gtk3-thunar.css template; @import'd by gtk.css)
+#   → ~/.config/gtk-4.0/colors.css             (gtk.css template; libadwaita named colors)
 #   → ~/.config/cava/config
 #   → ~/.config/zathura/zathurarc
 #   → ~/.config/fastfetch/colors.jsonc
 
 matugen image "$WALLPAPER" \
-    --config "$HOME/.config/matugen/config.toml"
+    --config "$HOME/.config/matugen/config.toml" \
+    --source-color-index 0
 
 # ── 4. Reload affected apps ───────────────────────────────────────────────────
 
@@ -74,4 +75,6 @@ pkill -USR1 cava 2>/dev/null || true
 # Quickshell Colors.qml: FileView watcher on colors.json handles itself — no action needed.
 # Zathura: reads zathurarc on open — no reload needed.
 # Fastfetch: reads colors.jsonc on open — no reload needed.
-# GTK: nwg-look or gsettings trigger here if you add GTK theme switching later.
+# Thunar (GTK3): colors.css is written above; ~/.config/gtk-3.0/gtk.css @import's it.
+#   GTK3 does not hot-reload CSS in a running process — close and reopen Thunar to see
+#   the new palette. No automatic restart: user elected to handle this manually.
