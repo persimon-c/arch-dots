@@ -142,7 +142,7 @@ These are not Hyprland keybinds — they are mouse interactions handled entirely
 | Arch logo pill | Click | Open / close left sidebar |
 | Workspace number | Click | Switch to that workspace |
 | App icon in bar | Click | Focus that window |
-| Cava / GitHub commits pill | Click | Expand media player dropdown (or open right sidebar if nothing playing) |
+| Cava pill | Click | Expand media player dropdown, if nothing is playing, default to|
 | Media player dropdown | Click outside or pill again | Close dropdown |
 | Clock pill | Click | Expand calendar dropdown |
 | Volume pill | Click icon | Mute / unmute toggle |
