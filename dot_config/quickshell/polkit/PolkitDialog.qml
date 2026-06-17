@@ -32,7 +32,7 @@ PanelWindow {
     color: "transparent"
 
     // Only process input when visible
-    visible: polkit.active
+    visible: polkit.active || (card.opacity > 0.01)
     focusable: polkit.active
 
     // WlrLayershell: sit above everything including other panels
@@ -96,6 +96,17 @@ PanelWindow {
             layer.enabled: true
             layer.effect: null  // placeholder — blur effect can be added later
 
+            opacity: polkit.active ? 1.0 : 0.0
+            scale: polkit.active ? 1.0 : 0.90
+
+            Behavior on opacity {
+                NumberAnimation { duration: Theme.durationSlow; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
+            }
+            Behavior on scale {
+                NumberAnimation { duration: Theme.durationSlow; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
+            }
+
+
             // Subtle border
             Rectangle {
                 anchors.fill: parent
@@ -151,7 +162,7 @@ PanelWindow {
 
                     Text {
                         text: polkit.message !== "" ? polkit.message : "Authentication Required"
-                        color: Colors.onSurface
+                        color: Colors.onSurfaceColor
                         font.pixelSize: Theme.fontSizeLg
                         font.weight: Font.Medium
                         elide: Text.ElideRight
@@ -162,7 +173,7 @@ PanelWindow {
                 // ── Action ID (subtle, machine-readable) ──────────────────────
                 Text {
                     text: polkit.actionId
-                    color: Colors.onSurfaceVariant
+                    color: Colors.onSurfaceVariantColor
                     font.pixelSize: Theme.fontSizeSm
                     elide: Text.ElideRight
                     Layout.fillWidth: true
@@ -178,7 +189,7 @@ PanelWindow {
 
                     Text {
                         text: "Authenticate as:"
-                        color: Colors.onSurfaceVariant
+                        color: Colors.onSurfaceVariantColor
                         font.pixelSize: Theme.fontSizeSm
                     }
 
@@ -199,7 +210,7 @@ PanelWindow {
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
-                                color: Colors.onSurface
+                                color: Colors.onSurfaceColor
                                 font.pixelSize: Theme.fontSizeMd
                             }
 
@@ -214,7 +225,7 @@ PanelWindow {
                 // ── Supplementary message (PAM info / error) ──────────────────
                 Text {
                     text: polkit.supplementaryMessage
-                    color: polkit.supplementaryIsError ? Colors.error : Colors.onSurfaceVariant
+                    color: polkit.supplementaryIsError ? Colors.error : Colors.onSurfaceVariantColor
                     font.pixelSize: Theme.fontSizeSm
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
@@ -232,7 +243,7 @@ PanelWindow {
                     visible: polkit.isResponseRequired
 
                     Behavior on border.color {
-                        ColorAnimation { duration: 120 }
+                        ColorAnimation { duration: 120 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
                     }
 
                     RowLayout {
@@ -246,7 +257,7 @@ PanelWindow {
                         TextInput {
                             id: passwordField
                             Layout.fillWidth: true
-                            color: Colors.onSurface
+                            color: Colors.onSurfaceColor
                             font.pixelSize: Theme.fontSizeMd
                             echoMode: polkit.responseVisible
                                 ? TextInput.Normal
@@ -263,7 +274,7 @@ PanelWindow {
                             Text {
                                 anchors.fill: parent
                                 text: polkit.inputPrompt !== "" ? polkit.inputPrompt : "Password"
-                                color: Colors.onSurfaceVariant
+                                color: Colors.onSurfaceVariantColor
                                 font: passwordField.font
                                 visible: passwordField.text.length === 0 && !passwordField.activeFocus
                                 opacity: 0.6
@@ -277,7 +288,7 @@ PanelWindow {
                             height: 28
                             radius: 6
                             color: visToggleArea.containsMouse
-                                ? Qt.rgba(Qt.color(Colors.onSurface).r, Qt.color(Colors.onSurface).g, Qt.color(Colors.onSurface).b, 0.08)
+                                ? Qt.rgba(Qt.color(Colors.onSurfaceColor).r, Qt.color(Colors.onSurfaceColor).g, Qt.color(Colors.onSurfaceColor).b, 0.08)
                                 : "transparent"
                             visible: polkit.responseVisible
 
@@ -335,7 +346,7 @@ PanelWindow {
                         height: 38
                         radius: Theme.radiusMd / 2
                         color: cancelArea.containsMouse
-                            ? Qt.rgba(Qt.color(Colors.onSurface).r, Qt.color(Colors.onSurface).g, Qt.color(Colors.onSurface).b, 0.08)
+                            ? Qt.rgba(Qt.color(Colors.onSurfaceColor).r, Qt.color(Colors.onSurfaceColor).g, Qt.color(Colors.onSurfaceColor).b, 0.08)
                             : "transparent"
                         border.color: Colors.outline
                         border.width: 1
@@ -343,7 +354,7 @@ PanelWindow {
                         Text {
                             anchors.centerIn: parent
                             text: "Cancel"
-                            color: Colors.onSurface
+                            color: Colors.onSurfaceColor
                             font.pixelSize: Theme.fontSizeMd
                         }
 
@@ -365,13 +376,13 @@ PanelWindow {
                             : Colors.accent
                         opacity: passwordField.text.length > 0 ? 1.0 : 0.5
 
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: 120 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve } }
+                        Behavior on opacity { NumberAnimation { duration: 120 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "Authenticate"
-                            color: Colors.onAccent
+                            color: Colors.onAccentColor
                             font.pixelSize: Theme.fontSizeMd
                             font.weight: Font.Medium
                         }
