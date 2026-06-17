@@ -1,0 +1,21 @@
+module services
+
+singleton Battery      1.0 Battery.qml
+singleton Audio        1.0 Audio.qml
+singleton Brightness   1.0 Brightness.qml
+singleton Bluetooth    1.0 Bluetooth.qml
+singleton Network      1.0 Network.qml
+singleton DateTime     1.0 DateTime.qml
+singleton Notifications 1.0 Notifications.qml
+singleton Media        1.0 Media.qml
+singleton Hyprland     1.0 Hyprland.qml
+singleton System       1.0 System.qml
+singleton Wallpaper    1.0 Wallpaper.qml
+singleton Cava         1.0 Cava.qml
+singleton Clipboard    1.0 Clipboard.qml
+singleton DropdownState 1.0 DropdownState.qml
+singleton Github       1.0 Github.qml
+singleton OsdService   1.0 OsdService.qml
+singleton PowerProfileService 1.0 PowerProfileService.qml
+singleton AsusCtl      1.0 AsusCtl.qml
+Polkit 1.0 Polkit.qml
