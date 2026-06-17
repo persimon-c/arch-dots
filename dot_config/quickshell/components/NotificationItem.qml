@@ -17,11 +17,43 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import QtQuick.Shapes
 import Quickshell.Services.Notifications
 import "../theme"
 
 Item {
     id: root
+
+    // ── Timer/Progress properties ─────────────────────────────────────────
+
+    property bool showProgress: false
+    property int timeoutMs: 5000
+    property real progressValue: 1.0
+
+    readonly property real progress: showProgress ? progressValue : 1.0
+
+    NumberAnimation {
+        id: progressAnimator
+        target: root
+        property: "progressValue"
+        from: 1.0
+        to: 0.0
+        duration: root.timeoutMs
+        running: root.showProgress && root.timeoutMs > 0
+    }
+
+
+    // ── Colors ────────────────────────────────────────────────────────────
+
+    readonly property color cPrimary:                  Qt.color(PanelColors.accent)
+    readonly property color cSurfaceContainerHigh:     Qt.color(PanelColors.popupBackground)
+    readonly property color cSurfaceContainerHighest:  Qt.color(PanelColors.rowBackground)
+    readonly property color cSurfaceContainer:         Qt.color(PanelColors.popupBackground)
+    readonly property color cOutline:                  Qt.color(PanelColors.border)
+    readonly property color cError:                    Qt.color(PanelColors.error)
+    readonly property color cTextPrimary:              Qt.color(PanelColors.textAccent)
+    readonly property color cTextMuted:                Qt.color(PanelColors.textDim)
+    readonly property color cOnAccentColor:            Qt.color(PanelColors.onAccent)
 
     // ── Required input ────────────────────────────────────────────────────
 
@@ -32,17 +64,23 @@ Item {
     signal dismissed()
     signal actionInvoked(string actionId)
 
-    // ── Layout ────────────────────────────────────────────────────────────
-
     implicitWidth:  Theme.notifWidth
     implicitHeight: card.implicitHeight
+    height:         implicitHeight
 
     // ── Derived helpers ───────────────────────────────────────────────────
 
-    readonly property bool isCritical: notification.urgency === NotificationUrgency.Critical
-    readonly property bool hasImage:   notification.image !== ""
-    readonly property bool hasBody:    notification.body  !== ""
-    readonly property bool hasActions: notification.actions.length > 0
+    readonly property bool isCritical: notification ? notification.urgency === NotificationUrgency.Critical : false
+    readonly property bool hasImage:   notification ? notification.image   !== "" : false
+    readonly property bool hasBody:    notification ? notification.body    !== "" : false
+    readonly property bool hasActions: notification ? notification.actions.length > 0 : false
+
+    readonly property string notifAppIcon: notification ? notification.appIcon : ""
+    readonly property string notifAppName: notification ? notification.appName : ""
+    readonly property string notifSummary: notification ? notification.summary : ""
+    readonly property string notifBody:    notification ? notification.body : ""
+    readonly property string notifImage:   notification ? notification.image : ""
+    readonly property var    notifActions: notification ? notification.actions : []
 
     // ── Card background ───────────────────────────────────────────────────
 
@@ -55,44 +93,46 @@ Item {
 
         implicitHeight: contentColumn.implicitHeight
                         + Theme.spacingMd * 2  // top + bottom padding
+        height:         implicitHeight
 
-        radius: Theme.radiusLg
+        radius: 10
 
-        color: Qt.rgba(
-            Colors.surfaceContainerHigh.r,
-            Colors.surfaceContainerHigh.g,
-            Colors.surfaceContainerHigh.b,
-            Theme.opacityPanel
-        )
+        property bool hovered: cardArea.containsMouse
 
-        border.color: Qt.rgba(
-            Colors.outline.r,
-            Colors.outline.g,
-            Colors.outline.b,
-            0.12
-        )
-        border.width: 1
+        color: "transparent"
 
-        // ── Urgency accent stripe ─────────────────────────────────────────
+        AmbientSurface {
+            anchors.fill: parent
+            radius: card.radius
+        }
+
+        // Hover highlight overlay
+        Rectangle {
+            anchors.fill: parent
+            radius: card.radius
+            color: "white"
+            opacity: card.hovered ? 0.05 : 0.0
+            Behavior on opacity {
+                NumberAnimation { duration: Theme.durationFast; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
+            }
+        }
+
+        border.color: root.isCritical ? cError : cPrimary
+        border.width: 1.5
+
+        // ── Left Accent Stripe ────────────────────────────────────────────
 
         Rectangle {
-            anchors.left:        parent.left
-            anchors.top:         parent.top
-            anchors.bottom:      parent.bottom
-            anchors.topMargin:   Theme.radiusLg
-            anchors.bottomMargin: Theme.radiusLg
-
-            width:   3
-            visible: root.isCritical
-
-            color: Colors.error
-
-            Rectangle {
-                anchors.fill:    parent
-                color:           Colors.error
-                opacity:         0.6
-                radius:          2
+            width: 4
+            height: parent.height - 24
+            radius: 2
+            anchors {
+                left: parent.left
+                leftMargin: 7
+                verticalCenter: parent.verticalCenter
             }
+            color: root.isCritical ? cError : cPrimary
+            opacity: 0.85
         }
 
         // ── Main content ──────────────────────────────────────────────────
@@ -104,7 +144,7 @@ Item {
             anchors.right:  parent.right
             anchors.top:    parent.top
             anchors.margins: Theme.spacingMd
-            anchors.leftMargin: root.isCritical ? Theme.spacingMd + 7 : Theme.spacingMd
+            anchors.leftMargin: Theme.spacingMd + 6
 
             spacing: Theme.spacingXs
 
@@ -121,10 +161,10 @@ Item {
 
                     Image {
                         anchors.fill: parent
-                        source:       root.notification.appIcon !== ""
-                                          ? ("image://icon/" + root.notification.appIcon)
+                        source:       root.notifAppIcon !== ""
+                                          ? ("image://icon/" + root.notifAppIcon)
                                           : ""
-                        visible:      root.notification.appIcon !== ""
+                        visible:      root.notifAppIcon !== ""
                         fillMode:     Image.PreserveAspectFit
                         smooth:       true
                         mipmap:       true
@@ -136,20 +176,21 @@ Item {
                         width:  8
                         height: 8
                         radius: 4
-                        color:  Colors.primary
-                        visible: root.notification.appIcon === ""
+                        color:  cPrimary
+                        visible: root.notifAppIcon === ""
                     }
                 }
 
                 // App name
                 Text {
                     Layout.fillWidth: true
-                    text:             root.notification.appName
+                    text:             root.notifAppName
                     font.family:      Theme.fontFamily
                     font.pixelSize:   Theme.fontSizeXs
                     font.weight:      Theme.fontWeightMedium
-                    color:            Colors.textMuted
+                    color:            PanelColors.textDim
                     elide:            Text.ElideRight
+                    textFormat:       Text.PlainText
                 }
 
                 // Critical badge
@@ -157,8 +198,8 @@ Item {
                     implicitWidth:  42
                     implicitHeight: 14
                     radius:         7
-                    color:          Qt.rgba(Colors.error.r, Colors.error.g, Colors.error.b, 0.18)
-                    border.color:   Colors.error
+                    color:          Qt.rgba(cError.r, cError.g, cError.b, 0.18)
+                    border.color:   cError
                     border.width:   1
                     visible:        root.isCritical
 
@@ -169,47 +210,97 @@ Item {
                         font.pixelSize:   8
                         font.weight:      Theme.fontWeightBold
                         color:            Colors.error
+                        textFormat:       Text.PlainText
                     }
                 }
 
-                // Dismiss button
+                // Progress/Dismiss button container
                 Item {
                     implicitWidth:  20
                     implicitHeight: 20
 
-                    Rectangle {
-                        id: dismissBg
+                    // Circular Progress Ring
+                    Shape {
+                        id: progressRing
                         anchors.fill: parent
-                        radius:       Theme.radiusFull
-                        color:        Qt.rgba(Colors.outline.r, Colors.outline.g, Colors.outline.b,
-                                              dismissArea.containsMouse ? 0.18 : 0.0)
+                        visible:      root.showProgress && root.timeoutMs > 0
+                        opacity:      card.hovered ? 0.0 : 1.0
 
-                        Behavior on color {
-                            ColorAnimation { duration: Theme.durationFast }
+                        Behavior on opacity {
+                            NumberAnimation { duration: Theme.durationFast ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
+                        }
+                        
+                        ShapePath {
+                            strokeWidth: 2
+                            strokeColor: cPrimary
+                            fillColor: "transparent"
+                            capStyle: ShapePath.RoundCap
+                            
+                            PathAngleArc {
+                                centerX: 10
+                                centerY: 10
+                                radiusX: 7
+                                radiusY: 7
+                                startAngle: -90
+                                sweepAngle: 360 * root.progress
+                            }
                         }
                     }
 
-                    Text {
-                        anchors.centerIn: parent
-                        text:             "✕"
-                        font.pixelSize:   10
-                        color:            dismissArea.containsMouse
-                                              ? Colors.textPrimary
-                                              : Colors.textMuted
-
-                        Behavior on color {
-                            ColorAnimation { duration: Theme.durationFast }
-                        }
-                    }
-
-                    MouseArea {
-                        id:           dismissArea
+                    // Dismiss button "✕"
+                    Item {
                         anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape:  Qt.PointingHandCursor
-                        onClicked:    root.dismissed()
+                        opacity:      !root.showProgress || card.hovered ? 1.0 : 0.0
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: Theme.durationFast ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
+                        }
+
+                        Rectangle {
+                            id: dismissBg
+                            anchors.fill: parent
+                            radius:       Theme.radiusFull
+                            color:        Qt.rgba(cOutline.r, cOutline.g, cOutline.b,
+                                                  dismissArea.containsMouse ? 0.18 : 0.0)
+
+                            Behavior on color {
+                                ColorAnimation { duration: Theme.durationFast ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
+                            }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text:             "✕"
+                            font.pixelSize:   10
+                            color:            dismissArea.containsMouse
+                                                  ? cTextPrimary
+                                                  : cTextMuted
+                            textFormat:       Text.PlainText
+
+                            Behavior on color {
+                                ColorAnimation { duration: Theme.durationFast ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
+                            }
+                        }
+
+                        MouseArea {
+                            id:           dismissArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape:  Qt.PointingHandCursor
+                            onClicked:    root.dismissed()
+                        }
                     }
                 }
+            }
+
+            // Divider line
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: cOutline
+                opacity: 0.15
+                Layout.topMargin: 2
+                Layout.bottomMargin: 4
             }
 
             // ── Summary + body ────────────────────────────────────────────
@@ -217,7 +308,7 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
                 spacing:          Theme.spacingSm
-                visible:          root.notification.summary !== "" || root.hasBody
+                visible:          root.notifSummary !== "" || root.hasBody
 
                 // Text column
                 ColumnLayout {
@@ -226,29 +317,30 @@ Item {
 
                     Text {
                         Layout.fillWidth: true
-                        text:             root.notification.summary
+                        text:             root.notifSummary
                         font.family:      Theme.fontFamily
                         font.pixelSize:   Theme.fontSizeMd
                         font.weight:      Theme.fontWeightSemiBold
-                        color:            Colors.textPrimary
+                        color:            PanelColors.textAccent
                         elide:            Text.ElideRight
                         maximumLineCount: 1
-                        visible:          root.notification.summary !== ""
+                        visible:          root.notifSummary !== ""
+                        textFormat:       Text.PlainText
                         wrapMode:         Text.NoWrap
                     }
 
                     Text {
                         Layout.fillWidth: true
-                        text:             root.notification.body
+                        text:             root.notifBody
                         font.family:      Theme.fontFamily
                         font.pixelSize:   Theme.fontSizeSm
-                        color:            Colors.textMuted
+                        color:            PanelColors.textDim
                         wrapMode:         Text.WordWrap
                         maximumLineCount: 3
                         elide:            Text.ElideRight
                         visible:          root.hasBody
                         lineHeight:       1.3
-                        textFormat:       Text.StyledText   // supports basic HTML from body markup
+                        textFormat:       Text.PlainText
                     }
                 }
 
@@ -261,12 +353,12 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius:       Theme.radiusSm
-                        color:        Colors.surfaceContainerHighest
+                        color:        Qt.color(PanelColors.rowBackground)
                         clip:         true
 
                         Image {
                             anchors.fill: parent
-                            source:       root.notification.image
+                            source:       root.notifImage
                             fillMode:     Image.PreserveAspectCrop
                             smooth:       true
                             mipmap:       true
@@ -283,7 +375,7 @@ Item {
                 visible:          root.hasActions
 
                 Repeater {
-                    model: root.notification.actions
+                    model: root.notifActions
 
                     delegate: Item {
                         implicitWidth:  actionLabel.implicitWidth + Theme.spacingMd * 2
@@ -293,15 +385,15 @@ Item {
                             anchors.fill: parent
                             radius:       Theme.radiusMd
                             color:        actionBtnArea.containsMouse
-                                              ? Qt.rgba(Colors.primary.r, Colors.primary.g, Colors.primary.b, 0.18)
-                                              : Qt.rgba(Colors.surfaceContainerHighest.r,
-                                                        Colors.surfaceContainerHighest.g,
-                                                        Colors.surfaceContainerHighest.b, 0.7)
-                            border.color: Qt.rgba(Colors.outline.r, Colors.outline.g, Colors.outline.b, 0.2)
+                                              ? Qt.rgba(cPrimary.r, cPrimary.g, cPrimary.b, 0.18)
+                                              : Qt.rgba(cSurfaceContainerHighest.r,
+                                                        cSurfaceContainerHighest.g,
+                                                        cSurfaceContainerHighest.b, 0.7)
+                            border.color: Qt.rgba(cOutline.r, cOutline.g, cOutline.b, 0.2)
                             border.width: 1
 
                             Behavior on color {
-                                ColorAnimation { duration: Theme.durationFast }
+                                ColorAnimation { duration: Theme.durationFast ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
                             }
 
                             Text {
@@ -312,11 +404,11 @@ Item {
                                 font.pixelSize:   Theme.fontSizeSm
                                 font.weight:      Theme.fontWeightMedium
                                 color:            actionBtnArea.containsMouse
-                                                      ? Colors.primary
-                                                      : Colors.textPrimary
+                                                      ? cPrimary
+                                                      : cTextPrimary
 
                                 Behavior on color {
-                                    ColorAnimation { duration: Theme.durationFast }
+                                    ColorAnimation { duration: Theme.durationFast ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
                                 }
                             }
 
@@ -337,121 +429,11 @@ Item {
                 Item { Layout.fillWidth: true }   // spacer to left-align action buttons
             }
 
-            // ── Inline reply ──────────────────────────────────────────────
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing:          Theme.spacingXs
-                visible:          root.notification.hasInlineReply
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight:   30
-                    radius:           Theme.radiusMd
-                    color:            Qt.rgba(Colors.surfaceContainer.r,
-                                             Colors.surfaceContainer.g,
-                                             Colors.surfaceContainer.b, 0.9)
-                    border.color:     replyField.activeFocus
-                                          ? Colors.primary
-                                          : Qt.rgba(Colors.outline.r, Colors.outline.g, Colors.outline.b, 0.25)
-                    border.width:     1
-
-                    Behavior on border.color {
-                        ColorAnimation { duration: Theme.durationFast }
-                    }
-
-                    TextInput {
-                        id:             replyField
-                        anchors.left:   parent.left
-                        anchors.right:  parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin:  Theme.spacingSm
-                        anchors.rightMargin: Theme.spacingSm
-
-                        font.family:    Theme.fontFamily
-                        font.pixelSize: Theme.fontSizeSm
-                        color:          Colors.textPrimary
-                        clip:           true
-
-                        Keys.onReturnPressed: {
-                            if (text.length > 0) {
-                                root.notification.sendInlineReply(text)
-                                text = ""
-                            }
-                        }
-
-                        // Placeholder
-                        Text {
-                            anchors.fill:   parent
-                            text:           root.notification.inlineReplyPlaceholder || "Reply…"
-                            font.family:    Theme.fontFamily
-                            font.pixelSize: Theme.fontSizeSm
-                            color:          Colors.textMuted
-                            visible:        replyField.text.length === 0 && !replyField.activeFocus
-                        }
-                    }
-                }
-
-                // Send button
-                Item {
-                    implicitWidth:  30
-                    implicitHeight: 30
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius:       Theme.radiusMd
-                        color:        sendArea.containsMouse
-                                          ? Colors.primary
-                                          : Qt.rgba(Colors.primary.r, Colors.primary.g, Colors.primary.b, 0.25)
-                        Behavior on color {
-                            ColorAnimation { duration: Theme.durationFast }
-                        }
-                    }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text:             "↑"
-                        font.pixelSize:   Theme.fontSizeMd
-                        font.weight:      Theme.fontWeightBold
-                        color:            sendArea.containsMouse ? Colors.onAccent : Colors.primary
-                        Behavior on color {
-                            ColorAnimation { duration: Theme.durationFast }
-                        }
-                    }
-
-                    MouseArea {
-                        id:           sendArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape:  Qt.PointingHandCursor
-                        onClicked: {
-                            if (replyField.text.length > 0) {
-                                root.notification.sendInlineReply(replyField.text)
-                                replyField.text = ""
-                            }
-                        }
-                    }
-                }
-            }
-
             // Bottom spacing row (ensures padding below last element)
             Item { implicitHeight: 0 }
         }
 
-        // ── Hover state ───────────────────────────────────────────────────
 
-        property bool hovered: cardArea.containsMouse
-
-        color: Qt.rgba(
-            Colors.surfaceContainerHigh.r,
-            Colors.surfaceContainerHigh.g,
-            Colors.surfaceContainerHigh.b,
-            hovered ? Math.min(1.0, Theme.opacityPanel + 0.06) : Theme.opacityPanel
-        )
-
-        Behavior on color {
-            ColorAnimation { duration: Theme.durationFast }
-        }
 
         MouseArea {
             id:           cardArea
