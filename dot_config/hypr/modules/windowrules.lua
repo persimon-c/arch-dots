@@ -36,6 +36,11 @@ hl.window_rule({ match = { class = "com.spotify.Client", float = true }, size = 
 -- Enable blur for all Quickshell panels (regex matches quickshell-bar, quickshell-*, etc.)
 hl.layer_rule({ match = { namespace = "quickshell.*" }, blur = true, ignore_alpha = 0.5 })
 
+-- Disable Hyprland animations for Quickshell popups so our buttery QML animations can run uninterrupted
+hl.layer_rule({ match = { namespace = "dropdown" }, no_anim = true })
+hl.layer_rule({ match = { namespace = "launcher" }, no_anim = true })
+hl.layer_rule({ match = { namespace = "polkit" }, no_anim = true })
+
 
 -- ── Forced Opaque (blur/transparency on these is just noise + GPU waste) ────
 
