@@ -15,17 +15,27 @@ Singleton {
     readonly property string focusedWorkspaceName: focusedWorkspace ? focusedWorkspace.name : ""
 
     function gotoWorkspace(id) {
-        for (var i = 0; i < workspaces.count; i++) {
-            var ws = workspaces.get(i)
-            if (ws.id === id) { ws.activate(); return }
+        if (id > focusedWorkspaceId) {
+            Hy.Hyprland.dispatch("hl.animation({leaf='workspacesIn',  enabled=true, speed=5, bezier='loft',     style='slidefade right 15%'})")
+            Hy.Hyprland.dispatch("hl.animation({leaf='workspacesOut', enabled=true, speed=5, bezier='throwOut', style='slidefade right 15%'})")
+        } else {
+            Hy.Hyprland.dispatch("hl.animation({leaf='workspacesIn',  enabled=true, speed=5, bezier='loft',     style='slidefade left 15%'})")
+            Hy.Hyprland.dispatch("hl.animation({leaf='workspacesOut', enabled=true, speed=5, bezier='throwOut', style='slidefade left 15%'})")
         }
+        var vals = workspaces.values || []
+        for (var i = 0; i < vals.length; i++) {
+            if (vals[i].id === id) { vals[i].activate(); return }
+        }
+        Hy.Hyprland.dispatch("workspace " + id)
     }
 
     function gotoWorkspaceName(name) {
-        for (var i = 0; i < workspaces.count; i++) {
-            var ws = workspaces.get(i)
-            if (ws.name === name) { ws.activate(); return }
+        var vals = workspaces.values || []
+        for (var i = 0; i < vals.length; i++) {
+            if (vals[i].name === name) { vals[i].activate(); return }
         }
+        if (usingLua) Hy.Hyprland.dispatch("hl.dsp.focus({workspace = '" + name + "'})")
+        else Hy.Hyprland.dispatch("workspace " + name)
     }
 
     function workspacePrev() {
@@ -82,7 +92,7 @@ Singleton {
         return obj ? (obj.class || obj.appId || "") : ""
     }
 
-    readonly property var focusedWorkspaceToplevels: focusedWorkspace ? focusedWorkspace.toplevels : []
+    readonly property var focusedWorkspaceToplevels: (focusedWorkspace && focusedWorkspace.toplevels) ? focusedWorkspace.toplevels.values : []
     readonly property bool hasWindows: focusedWorkspace ? focusedWorkspace.toplevels.count > 0 : false
 
     function focusWindow(address) {
@@ -145,13 +155,13 @@ Singleton {
 
     Component.onCompleted: {
         console.log("Hyprland: service ready — lua mode:", usingLua)
-        // workspaces.count may be 0 here as the model populates async
         Qt.callLater(function() {
-            console.log("Hyprland: workspaces:", workspaces.count,
+            var vals = workspaces.values || []
+            console.log("Hyprland: workspaces:", vals.length,
                         "| focused:", focusedWorkspaceName,
                         "| active:", activeTitle)
-            for (var i = 0; i < workspaces.count; i++) {
-                var ws = workspaces.get(i)
+            for (var i = 0; i < vals.length; i++) {
+                var ws = vals[i]
                 console.log("  Workspace", i, ":", ws.name, "(id:", ws.id + ")")
             }
         })
