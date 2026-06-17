@@ -135,7 +135,7 @@ Item {
             // Fade in when load completes
             opacity: status === Image.Ready ? 1.0 : 0.0
             Behavior on opacity {
-                NumberAnimation { duration: Theme.durationNormal; easing.type: Easing.OutQuad }
+                NumberAnimation { duration: Theme.durationNormal; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
             }
         }
 
@@ -156,7 +156,7 @@ Item {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.5; color: Colors.onSurface }
+                    GradientStop { position: 0.5; color: Colors.onSurfaceColor }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
 
