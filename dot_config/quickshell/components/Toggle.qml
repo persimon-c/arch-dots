@@ -22,7 +22,7 @@ Item {
     property bool   enabled:  true
     property color  activeColor:   Colors.primary
     property color  inactiveColor: Colors.surfaceContainerHighest
-    property color  thumbColor:    checked ? Colors.onPrimary : Colors.outline
+    property color  thumbColor:    checked ? Colors.onPrimaryColor : Colors.outline
 
     signal toggled()
 
@@ -43,7 +43,7 @@ Item {
         opacity: root.enabled ? 1.0 : 0.38
 
         Behavior on color {
-            ColorAnimation { duration: 180; easing.type: Easing.OutQuad }
+            ColorAnimation { duration: Theme.durationFast; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
 
         border.color: root.checked
@@ -52,7 +52,7 @@ Item {
         border.width: root.checked ? 0 : 1.5
 
         Behavior on border.color {
-            ColorAnimation { duration: 180 }
+            ColorAnimation { duration: 180 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
     }
 
@@ -85,13 +85,13 @@ Item {
         opacity: root.enabled ? 1.0 : 0.38
 
         Behavior on x {
-            NumberAnimation { duration: 180; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: 180; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
         Behavior on width {
-            NumberAnimation { duration: 180; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: 180; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
         Behavior on color {
-            ColorAnimation { duration: 180 }
+            ColorAnimation { duration: 180 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
     }
 
@@ -102,7 +102,7 @@ Item {
         width:  thumb.width + 16
         height: width
         radius: width / 2
-        color:  root.checked ? root.activeColor : Colors.onSurface
+        color:  root.checked ? root.activeColor : Colors.onSurfaceColor
         opacity: {
             if (!root.enabled)            return 0
             if (mouseArea.pressed)        return 0.18
@@ -110,7 +110,7 @@ Item {
             return 0
         }
         Behavior on opacity {
-            NumberAnimation { duration: 100 }
+            NumberAnimation { duration: 100 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
     }
 
