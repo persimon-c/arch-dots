@@ -35,7 +35,7 @@ Item {
     property bool   checked:  false
 
     // Tint the icon. Defaults to onSurface. Set to Colors.primary for accent buttons.
-    property color  iconColor: Colors.onSurface
+    property color  iconColor: Colors.onSurfaceColor
 
     // Background shape: "circle" or "rounded"
     property string shape: "circle"
@@ -57,7 +57,7 @@ Item {
         radius: root.shape === "circle"
             ? width / 2
             : Theme.radiusSm
-        color: Colors.onSurface
+        color: Colors.onSurfaceColor
 
         opacity: {
             if (!root.enabled)          return 0
@@ -68,7 +68,7 @@ Item {
         }
 
         Behavior on opacity {
-            NumberAnimation { duration: 100; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: 100; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
     }
 
@@ -88,13 +88,13 @@ Item {
             id: rippleExpand
             to:       root.implicitWidth * 2.2
             duration: 350
-            easing.type: Easing.OutQuart
+            easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve
         }
         NumberAnimation on opacity {
             id: rippleFade
             to:       0
             duration: 350
-            easing.type: Easing.OutQuart
+            easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve
         }
 
         function trigger() {
@@ -140,7 +140,7 @@ Item {
         }
 
         Behavior on opacity {
-            NumberAnimation { duration: 150 }
+            NumberAnimation { duration: 150 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
         }
     }
 
@@ -148,7 +148,7 @@ Item {
 
     scale: mouseArea.pressed ? 0.88 : 1.0
     Behavior on scale {
-        NumberAnimation { duration: 100; easing.type: Easing.OutQuad }
+        NumberAnimation { duration: 100; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
     }
 
     // ── Input ─────────────────────────────────────────────────────────────
