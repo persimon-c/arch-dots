@@ -6,7 +6,7 @@
 -- appears centered and smaller rather than almost fullscreen.
 -- Ignores special workspaces.
 
-hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = 50, gaps_in = 7 })
+hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = 40, gaps_in = 7 })
 
 -- Remove border and rounding when only one tiled window (clean look)
 hl.window_rule({ match = { float = false, workspace = "w[tv1]s[false]" }, border_size = 2 })
