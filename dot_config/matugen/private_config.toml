@@ -4,7 +4,7 @@
 
 [config]
 mode = "dark"
-scheme_type = "tonal-spot"
+scheme_type = "vibrant"
 
 # ── Quickshell ────────────────────────────────────────────────────────────────
 # Colors.qml watches this file via FileView — no reload signal needed.
@@ -29,9 +29,16 @@ output_path = "~/.config/kitty/matugen-colors.conf"
 
 
 # ── GTK 3 + 4 ────────────────────────────────────────────────────────────────
+# gtk3: uses gtk3-thunar.css — maps matugen palette to classic GTK3 named
+#        colors (theme_bg_color, theme_selected_bg_color, etc.) + direct CSS
+#        rules targeting Thunar's widget selectors (.sidebar, .view, etc.).
+#        Output is imported by ~/.config/gtk-3.0/gtk.css via @import 'colors.css'.
+#
+# gtk4: uses gtk.css — libadwaita named colors (window_bg_color, accent_bg_color,
+#        etc.) for GTK4/libadwaita apps. Unchanged from original.
 
 [templates.gtk3]
-input_path  = "~/.config/matugen/templates/gtk.css"
+input_path  = "~/.config/matugen/templates/gtk3-thunar.css"
 output_path = "~/.config/gtk-3.0/colors.css"
 
 [templates.gtk4]
