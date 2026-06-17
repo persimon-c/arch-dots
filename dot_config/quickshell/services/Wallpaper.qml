@@ -1,3 +1,5 @@
+// Service: wallpaper — implemented 2026-06-17
+pragma Singleton
 // services/Wallpaper.qml
 // Wallpaper service — data only, no UI.
 //
@@ -11,12 +13,8 @@
 //
 // Dependencies:
 //   - inotify-tools  (inotifywait — directory watching)
-//   - imagemagick    (magick — thumbnail generation)
+//   - imagemagick    (magick — thumbnail generation, optional)
 //   - wallpaper-change.sh must exist at ~/.config/quickshell/scripts/wallpaper-change.sh
-//
-// XDG thumbnail spec:
-//   Path: ~/.cache/thumbnails/large/<md5("file://<abspath)")>.png
-//   Size: 256x256 (large spec)
 
 import QtQuick
 import QtCore
@@ -38,15 +36,49 @@ Singleton {
     // True while wallpaper-change.sh is running.
     property bool isChanging: false
 
+    // Queued path — applied once the current change finishes.
+    property string _pendingPath: ""
+
     // True during initial directory scan.
     property bool isScanning: false
+
+    // Configurable wallpaper directory
+    property string wallpaperDir: (StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/wallpapers").replace(/^file:\/\//, "")
+
+    onWallpaperDirChanged: {
+        if (wallpaperDir.indexOf("file://") === 0) {
+            wallpaperDir = wallpaperDir.replace(/^file:\/\//, "")
+            return
+        }
+        console.log("[Wallpaper] wallpaperDir changed to:", wallpaperDir)
+        watchProcess.running = false
+        watchProcess.command = [
+            "inotifywait",
+            "--monitor",
+            "--quiet",
+            "--event", "create",
+            "--event", "delete",
+            "--event", "moved_to",
+            "--event", "moved_from",
+            "--format", "%f",
+            wallpaperDir
+        ]
+        watchProcess.running = true
+        root._scan()
+    }
 
     // ── Public API ────────────────────────────────────────────────────────────
 
     // Apply a wallpaper. Called by the carousel UI when the centered item auto-applies.
     function setWallpaper(path) {
-        if (root.isChanging) return
-        if (path === root.currentWallpaper) return
+        if (path === root.currentWallpaper && root._pendingPath === "") return
+        if (root.isChanging) {
+            // Queue it — applied as soon as the current change finishes.
+            root._pendingPath = path
+            console.log("[Wallpaper] Queued (busy):", path)
+            return
+        }
+        root._pendingPath = ""
         console.log("[Wallpaper] Setting wallpaper:", path)
         root.isChanging = true
         changeProcess.command = [
@@ -76,51 +108,34 @@ Singleton {
 
     // ── Paths ─────────────────────────────────────────────────────────────────
 
-    readonly property string wallpaperDir:   Qt.resolvedUrl("file://" + StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/wallpapers").toString().replace("file://", "")
-    readonly property string cachePathFile:  StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/current_wallpaper_path"
-    readonly property string thumbCacheDir:  StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/thumbnails/large"
-    readonly property string changeScript:   Qt.resolvedUrl("../scripts/wallpaper-change.sh").toString().replace("file://", "")
+    readonly property string cachePathFile:  (StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/current_wallpaper_path").replace(/^file:\/\//, "")
+    readonly property string thumbCacheDir:  (StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.cache/thumbnails/large").replace(/^file:\/\//, "")
+    readonly property string changeScript:   (StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.config/quickshell/scripts/wallpaper-change.sh").replace(/^file:\/\//, "")
 
     // ── Current wallpaper watcher ─────────────────────────────────────────────
     // FileView watches ~/.cache/current_wallpaper_path written by wallpaper-change.sh.
-    // No signal needed — binding to .text is reactive.
-
     FileView {
         id: currentPathView
         path: root.cachePathFile
-        // watchChanges: true is default in QS 0.3.0
+        watchChanges: true
+        onFileChanged: reload()  // watchChanges only emits; we must reload() to refresh text()
     }
 
     // ── Directory watcher (inotifywait) ───────────────────────────────────────
-    // Watches ~/wallpapers/ for CREATE/DELETE/MOVED events.
-    // On any event, triggers a rescan.
-
+    // Watches root.wallpaperDir for CREATE/DELETE/MOVED events.
     Process {
         id: watchProcess
-        command: [
-            "inotifywait",
-            "--monitor",
-            "--quiet",
-            "--event", "create",
-            "--event", "delete",
-            "--event", "moved_to",
-            "--event", "moved_from",
-            "--format", "%f",
-            root.wallpaperDir
-        ]
-        running: true
+        command: []
+        running: false
 
         stdout: SplitParser {
             onRead: function(line) {
-                // Any event in the directory = rescan.
-                // Debounce: cancel pending rescan timer and restart it.
                 rescanDebounce.restart()
             }
         }
 
         onExited: function(code, status) {
-            // inotifywait exited unexpectedly — retry after a delay.
-            if (code !== 0) {
+            if (code !== 0 && root.wallpaperDir !== "") {
                 console.warn("[Wallpaper] inotifywait exited with code", code, "— retrying in 5s")
                 watchRestartTimer.start()
             }
@@ -143,10 +158,8 @@ Singleton {
     }
 
     // ── Directory scanner ─────────────────────────────────────────────────────
-
     Process {
         id: scanProcess
-        // Command built dynamically in _scan()
         stdout: SplitParser {
             onRead: function(line) {
                 const trimmed = line.trim()
@@ -157,13 +170,11 @@ Singleton {
         onExited: function(code) {
             root.isScanning = false
             console.log("[Wallpaper] Scan complete —", wallpaperModel.count, "wallpapers found")
-            // Check which thumbnails already exist before generating missing ones.
             _checkExistingThumbnails()
         }
     }
 
     // ── Wallpaper change process ──────────────────────────────────────────────
-
     Process {
         id: changeProcess
         onExited: function(code) {
@@ -173,19 +184,54 @@ Singleton {
             } else {
                 console.log("[Wallpaper] Wallpaper applied successfully")
             }
+            // Apply any queued change
+            if (root._pendingPath !== "") {
+                var next = root._pendingPath
+                root._pendingPath = ""
+                root.setWallpaper(next)
+            }
+        }
+    }
+
+    // ── ImageMagick presence checks ───────────────────────────────────────────
+    property bool _hasMagick: false
+    property string _magickCmd: "magick"
+
+    Process {
+        id: checkMagickProc
+        command: ["which", "magick"]
+        running: true
+        onExited: (code) => {
+            if (code === 0) {
+                root._hasMagick = true
+                root._magickCmd = "magick"
+                console.log("[Wallpaper] ImageMagick (magick) support verified")
+            } else {
+                checkConvertProc.running = true
+            }
+        }
+    }
+
+    Process {
+        id: checkConvertProc
+        command: ["which", "convert"]
+        running: false
+        onExited: (code) => {
+            if (code === 0) {
+                root._hasMagick = true
+                root._magickCmd = "convert"
+                console.log("[Wallpaper] ImageMagick (convert) support verified")
+            } else {
+                console.log("[Wallpaper] ImageMagick not found. Falling back to original image scaling.")
+            }
         }
     }
 
     // ── Thumbnail existence check ─────────────────────────────────────────────
-    // After scan completes, run ONE find over the thumbnail cache dir and collect
-    // all existing hashes into a JS Set. Then mark the entire model in one pass.
-    // Zero per-item subprocess overhead.
-
     property var _existingThumbs: new Set()
 
     Process {
         id: thumbScanProcess
-        // Command set dynamically in _checkExistingThumbnails()
         stdout: SplitParser {
             onRead: function(line) {
                 const trimmed = line.trim()
@@ -193,7 +239,6 @@ Singleton {
             }
         }
         onExited: function() {
-            // Single pass: mark all model entries whose thumbnail already exists.
             let alreadyDone = 0
             for (let i = 0; i < wallpaperModel.count; i++) {
                 const entry = wallpaperModel.get(i)
@@ -209,18 +254,14 @@ Singleton {
     }
 
     // ── Thumbnail generation — 4-worker parallel pool ─────────────────────────
-    // 4 concurrent magick processes. Fast enough on first run without thrashing.
-    // Priority queue: requestThumbnail() inserts at front; bulk scan appends at back.
-
     readonly property int _thumbWorkerCount: 4
     property var _thumbQueue: []
     property int _thumbActiveWorkers: 0
 
-    // Four workers declared explicitly — Repeater is not valid inside QtObject.
-    Process { id: thumbWorker0; onExited: function(code) { root._workerDone(0, code) } }
-    Process { id: thumbWorker1; onExited: function(code) { root._workerDone(1, code) } }
-    Process { id: thumbWorker2; onExited: function(code) { root._workerDone(2, code) } }
-    Process { id: thumbWorker3; onExited: function(code) { root._workerDone(3, code) } }
+    Process { id: thumbWorker0; property string _currentPath: ""; onExited: function(code) { root._workerDone(0, code) } }
+    Process { id: thumbWorker1; property string _currentPath: ""; onExited: function(code) { root._workerDone(1, code) } }
+    Process { id: thumbWorker2; property string _currentPath: ""; onExited: function(code) { root._workerDone(2, code) } }
+    Process { id: thumbWorker3; property string _currentPath: ""; onExited: function(code) { root._workerDone(3, code) } }
 
     readonly property var _workers: [thumbWorker0, thumbWorker1, thumbWorker2, thumbWorker3]
 
@@ -251,12 +292,13 @@ Singleton {
             "path": path,
             "name": name,
             "thumbnailPath": thumb,
-            "hasThumbnail": false   // will be confirmed lazily
+            "hasThumbnail": false
         })
     }
 
     // XDG thumbnail path: ~/.cache/thumbnails/large/<md5("file://<abspath>")>.png
     function _thumbPath(path) {
+        if (!root._hasMagick) return path // Fallback: use original path
         const uri = "file://" + path
         const hash = Qt.md5(uri)
         return root.thumbCacheDir + "/" + hash + ".png"
@@ -277,14 +319,14 @@ Singleton {
 
     function _enqueueThumbPriority(path) {
         const existing = root._thumbQueue.indexOf(path)
-        if (existing === 0) return  // already at front
+        if (existing === 0) return
         if (existing > 0) root._thumbQueue.splice(existing, 1)
         root._thumbQueue.unshift(path)
         _drainThumbQueue()
     }
 
-    // Try to fill all idle workers from the queue.
     function _drainThumbQueue() {
+        if (!root._hasMagick) return
         for (let w = 0; w < root._thumbWorkerCount; w++) {
             if (root._thumbQueue.length === 0) break
             const worker = root._workers[w]
@@ -300,10 +342,10 @@ Singleton {
         worker.command = [
             "/bin/bash", "-c",
             "mkdir -p \"" + root.thumbCacheDir + "\" && " +
-            "magick \"" + path + "\" " +
-            "-thumbnail 256x256^ " +
+            root._magickCmd + " \"" + path + "[0]\" " +
+            "-thumbnail 1024x1024^ " +
             "-gravity Center " +
-            "-extent 256x256 " +
+            "-extent 1024x1024 " +
             "\"" + thumb + "\""
         ]
         worker.running = true
@@ -322,6 +364,7 @@ Singleton {
     }
 
     function _generateAllThumbnails() {
+        if (!root._hasMagick) return
         for (let i = 0; i < wallpaperModel.count; i++) {
             const entry = wallpaperModel.get(i)
             if (!entry.hasThumbnail) _enqueueThumb(entry.path)
@@ -330,8 +373,18 @@ Singleton {
     }
 
     function _checkExistingThumbnails() {
+        if (!root._hasMagick) {
+            // Force fallback values: set all as having thumbnails immediately
+            for (let i = 0; i < wallpaperModel.count; i++) {
+                const entry = wallpaperModel.get(i)
+                wallpaperModel.setProperty(i, "hasThumbnail", true)
+                wallpaperModel.setProperty(i, "thumbnailPath", entry.path)
+            }
+            console.log("[Wallpaper] Using original images as fallback thumbnails")
+            return
+        }
+
         root._existingThumbs = new Set()
-        // List all .png filenames (just the basename) in the large thumbnail cache.
         thumbScanProcess.command = [
             "/bin/bash", "-c",
             "ls \"" + root.thumbCacheDir + "\" 2>/dev/null || true"
@@ -342,11 +395,24 @@ Singleton {
     // ── Init ──────────────────────────────────────────────────────────────────
 
     Component.onCompleted: {
-        console.log("[Wallpaper] Initialized")
+        console.log("[Wallpaper] Initializing...")
         console.log("[Wallpaper]   Wallpaper dir:", root.wallpaperDir)
         console.log("[Wallpaper]   Thumb cache:  ", root.thumbCacheDir)
         console.log("[Wallpaper]   Change script:", root.changeScript)
-        console.log("[Wallpaper]   Current wall: ", root.currentWallpaper || "(none)")
+        
+        // Start watching the wallpaperDir
+        watchProcess.command = [
+            "inotifywait",
+            "--monitor",
+            "--quiet",
+            "--event", "create",
+            "--event", "delete",
+            "--event", "moved_to",
+            "--event", "moved_from",
+            "--format", "%f",
+            root.wallpaperDir
+        ]
+        watchProcess.running = true
         root._scan()
     }
 }
