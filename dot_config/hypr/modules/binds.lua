@@ -87,9 +87,19 @@ hl.bind(mod .. " + mouse_down", function()
     hl.dispatch(hl.dsp.focus({ workspace = "-1" }))
 end, { mouse = true })
 
+hl.bind("ALT + Right", function()
+    wsForward()
+    hl.dispatch(hl.dsp.focus({ workspace = "+1" }))
+end)
+
+hl.bind("ALT + Left", function()
+    wsBackward()
+    hl.dispatch(hl.dsp.focus({ workspace = "-1" }))
+end)
+
 -- ── Tab / Cycle ──────────────────────────────────────────────────────────────
 
-hl.bind(mod .. " + Tab",           hl.dsp.exec_cmd("qs ipc -c overview call overview toggle"))
+hl.bind(mod .. " + Tab",           hl.dsp.window.cycle_next())
 hl.bind(mod .. " + SHIFT + Tab",   hl.dsp.window.cycle_next({ next = false }))
 hl.bind("ALT + Tab",               hl.dsp.window.cycle_next())
 hl.bind("ALT + SHIFT + Tab",       hl.dsp.window.cycle_next({ next = false }))
@@ -98,7 +108,7 @@ hl.bind("ALT + SHIFT + Tab",       hl.dsp.window.cycle_next({ next = false }))
 
 hl.bind(mod .. " + Return",        hl.dsp.exec_cmd("kitty"))
 hl.bind(mod .. " + B",             hl.dsp.exec_cmd("brave"))
-hl.bind(mod .. " + A",             hl.dsp.exec_cmd("antigravity"))
+hl.bind(mod .. " + A",             hl.dsp.exec_cmd("antigravity-ide"))
 hl.bind(mod .. " + S",             hl.dsp.exec_cmd("subl"))
 hl.bind(mod .. " + O",             hl.dsp.exec_cmd("firefox"))
 hl.bind(mod .. " + T",             hl.dsp.exec_cmd("thunar"))
@@ -111,13 +121,14 @@ hl.bind(mod .. " + C",             hl.dsp.exec_cmd("hyprpicker -a && notify-send
 
 -- ── Quickshell Panel Triggers ─────────────────────────────────────────────────
 
-hl.bind(mod .. " + Space",         hl.dsp.exec_cmd("quickshell ipc call toggleLauncher"))
+hl.bind(mod .. " + Space",         hl.dsp.exec_cmd("quickshell ipc call launcher toggle"))
 hl.bind(mod .. " + N",             hl.dsp.exec_cmd("quickshell ipc call toggleNotificationCenter"))
 hl.bind(mod .. " + G",             hl.dsp.exec_cmd("quickshell ipc call toggleRightSidebar"))
-hl.bind(mod .. " + X",             hl.dsp.exec_cmd("quickshell ipc call toggleLeftSidebar"))
-hl.bind(mod .. " + W",             hl.dsp.exec_cmd("quickshell ipc call toggleWallpaperPicker"))
+hl.bind(mod .. " + X",             hl.dsp.exec_cmd("quickshell ipc call left-sidebar toggle"))
+hl.bind(mod .. " + W",             hl.dsp.exec_cmd("quickshell ipc call wallpaper-picker toggle"))
 hl.bind(mod .. " + SHIFT + O",     hl.dsp.exec_cmd("quickshell ipc call toggleSettings"))
-hl.bind(mod .. " + SHIFT + V",     hl.dsp.exec_cmd("quickshell ipc call toggleClipboard"))
+hl.bind(mod .. " + SHIFT + V",     hl.dsp.exec_cmd("quickshell ipc call clipboard toggle"))
+hl.bind(mod .. " + Y",             hl.dsp.exec_cmd("quickshell ipc call right-sidebar toggle"))
 hl.bind(mod .. " + semicolon",     hl.dsp.exec_cmd("quickshell ipc call toggleEmojiPicker"))
 
 -- ── Screenshots ──────────────────────────────────────────────────────────────
