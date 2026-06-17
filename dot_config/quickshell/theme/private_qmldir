@@ -1,0 +1,4 @@
+module qs.theme
+singleton Colors 1.0 Colors.qml
+singleton Theme 1.0 Theme.qml
+singleton PanelColors 1.0 PanelColors.qml
