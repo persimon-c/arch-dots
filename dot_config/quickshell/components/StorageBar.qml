@@ -97,12 +97,12 @@ Item {
                 : 0
 
             Behavior on width {
-                NumberAnimation { duration: root.animDuration; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: root.animDuration; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
             }
 
             color: root._fillColor
             Behavior on color {
-                ColorAnimation { duration: 250 }
+                ColorAnimation { duration: 250 ; easing.type: Theme.easingType; easing.bezierCurve: Theme.easingCurve }
             }
 
             // Gloss — lighter strip across top half
