@@ -2,30 +2,30 @@
 # Matugen template — writes ~/.config/zathura/zathurarc on wallpaper change.
 # Add your other zathura settings after these color lines.
 
-set default-bg             "#181115"
-set default-fg             "#eddfe3"
+set default-bg             "#101417"
+set default-fg             "#e0e3e8"
 
-set statusbar-bg           "#251d21"
-set statusbar-fg           "#eddfe3"
+set statusbar-bg           "#1c2024"
+set statusbar-fg           "#e0e3e8"
 
-set inputbar-bg            "#30282b"
-set inputbar-fg            "#eddfe3"
+set inputbar-bg            "#262a2e"
+set inputbar-fg            "#e0e3e8"
 
-set notification-bg        "#30282b"
-set notification-fg        "#eddfe3"
+set notification-bg        "#262a2e"
+set notification-fg        "#e0e3e8"
 set notification-error-bg  "#ffb4ab"
 set notification-error-fg  "#690005"
-set notification-warning-bg "#f3ba9b"
-set notification-warning-fg "#181115"
+set notification-warning-bg "#d0bfe7"
+set notification-warning-fg "#101417"
 
-set highlight-color        "#6c3454"
-set highlight-active-color "#fcb0d6"
+set highlight-color        "#024b71"
+set highlight-active-color "#97ccf9"
 
-set completion-bg          "#251d21"
-set completion-fg          "#eddfe3"
-set completion-highlight-bg "#fcb0d6"
-set completion-highlight-fg "#511d3c"
+set completion-bg          "#1c2024"
+set completion-fg          "#e0e3e8"
+set completion-highlight-bg "#97ccf9"
+set completion-highlight-fg "#003450"
 
 set recolor                "false"
-set recolor-lightcolor     "#181115"
-set recolor-darkcolor      "#eddfe3"
+set recolor-lightcolor     "#101417"
+set recolor-darkcolor      "#e0e3e8"
