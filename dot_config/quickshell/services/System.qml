@@ -19,6 +19,7 @@ Singleton {
 
     Component.onCompleted: {
         _poll()
+        uptimeFile.reload()
         console.log("System: service ready")
     }
 
@@ -27,6 +28,7 @@ Singleton {
         memFile.reload()
         netFile.reload()
         diskStatsFile.reload()
+        gpuFile.reload()
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -73,6 +75,23 @@ Singleton {
     }
 
     // ─────────────────────────────────────────────────────────────────────
+    // GPU
+    // ─────────────────────────────────────────────────────────────────────
+
+    FileView {
+        id: gpuFile
+        path: "/sys/class/drm/card2/device/gpu_busy_percent"
+        onLoaded: root._parseGpu()
+    }
+
+    property real gpuPercent: 0
+
+    function _parseGpu() {
+        var val = parseFloat(gpuFile.text().trim())
+        if (!isNaN(val)) gpuPercent = val
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
     // RAM
     // ─────────────────────────────────────────────────────────────────────
 
@@ -114,7 +133,7 @@ Singleton {
     // Disk — usage via df (one process, all mounts at once)
     // ─────────────────────────────────────────────────────────────────────
 
-    property var monitoredDisks: ["nvme0n1p5", "sda3"]
+    property var monitoredDisks: ["nvme0n1p5", "nvme0n1p3", "sda3"]
     property var disks: ({})
     property int disksRevision: 0
 
