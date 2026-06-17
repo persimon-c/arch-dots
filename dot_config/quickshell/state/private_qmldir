@@ -1,0 +1,11 @@
+module qs.state
+singleton SessionState 1.0 SessionState.qml
+singleton AudioState 1.0 AudioState.qml
+singleton BrightnessState 1.0 BrightnessState.qml
+singleton BluetoothState 1.0 BluetoothState.qml
+singleton NetworkState 1.0 NetworkState.qml
+singleton BatteryState 1.0 BatteryState.qml
+singleton ClockState 1.0 ClockState.qml
+singleton MediaState 1.0 MediaState.qml
+singleton NotificationState 1.0 NotificationState.qml
+singleton SidebarState 1.0 SidebarState.qml
