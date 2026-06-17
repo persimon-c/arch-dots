@@ -1,3 +1,4 @@
+// Service: audio — implemented 2026-06-17
 // services/Audio.qml — Audio service
 // Exposes default sink (output) and source (input) via Pipewire.
 // PwObjectTracker binds both nodes so volume/mute properties are valid.
