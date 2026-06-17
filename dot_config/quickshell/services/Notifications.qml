@@ -1,15 +1,13 @@
+// Service: notifications — implemented 2026-06-17
 // services/Notifications.qml — Notification service
-// Replaces Swaync. Owns the NotificationServer and manages two lists:
 //
-//   popups  — active on-screen popups (max 5 simultaneous)
-//             auto-expire after expireTimeout (default 5s if app sends 0)
-//             Critical urgency stays until manually dismissed
+// Uses server.trackedNotifications directly as the popup model so that
+// QML's modelData binding works correctly (JS arrays lose QObject refs).
 //
-//   history — persisted notification center list (max 50, no transients)
-//             cleared manually or per-notification
+// Two lists:
+//   server.trackedNotifications — live popup model (QML-native, modelData works)
+//   history                     — notification center list (max 50)
 //
-// UI components (NotificationPopup, NotificationCenter) bind to these lists.
-// They never interact with NotificationServer directly.
 pragma Singleton
 import QtQuick
 import Quickshell
@@ -20,194 +18,138 @@ Singleton {
 
     // ── Config ────────────────────────────────────────────────────────────
 
-    readonly property int maxPopups:       5
-    readonly property int maxHistory:      50
-    readonly property int defaultTimeoutMs: 5000  // used when expireTimeout == 0
+    readonly property int maxPopups:        5
+    readonly property int maxHistory:       50
+    readonly property int defaultTimeoutMs: 5000
 
     // ── Server ────────────────────────────────────────────────────────────
 
     NotificationServer {
         id: server
 
-        // Advertise full capabilities — we handle everything
-        actionsSupported:      true
-        actionIconsSupported:  true
-        bodySupported:         true
-        bodyMarkupSupported:   true
-        bodyHyperlinksSupported: true
-        imageSupported:        true
-        persistenceSupported:  true
-        inlineReplySupported:  true
-        keepOnReload:          true
+        actionsSupported:        true
+        actionIconsSupported:    true
+        bodySupported:           true
+        bodyMarkupSupported:     false   // plain text only — avoids StyledText render bugs
+        bodyHyperlinksSupported: false
+        imageSupported:          true
+        persistenceSupported:    true
+        inlineReplySupported:    false
+        keepOnReload:            true
 
         onNotification: function(notif) {
-            // Always track so the object isn't destroyed under us
             notif.tracked = true
             root._handleIncoming(notif)
         }
     }
 
-    // ── Popup queue ───────────────────────────────────────────────────────
-    // Array of { notification, timerId } objects.
-    // Ordered newest-first so the UI can stack them top-to-bottom.
+    // ── Expose trackedNotifications for the popup ListView ─────────────────
+    // Use this as the model in NotificationPopup — modelData will be the
+    // Notification object with .summary, .body, .appName, etc.
 
-    property var popups: []
+    readonly property var trackedNotifications: server.trackedNotifications
 
-    // Emitted when the popup list changes — UI should bind to popups and
-    // this signal to refresh (plain JS arrays don't trigger QML bindings).
-    // signal popupsChanged()
+    // ── Timer tracking (keyed by notification id) ─────────────────────────
+
+    property var _timers: ({})
+
+    // ── Incoming ──────────────────────────────────────────────────────────
 
     function _handleIncoming(notif) {
-        // If this is an update to an existing notification (same id),
-        // replace it in both lists rather than adding a duplicate.
-        _removePopupById(notif.id)
+        console.log("[Notifications] Incoming: id=" + notif.id
+            + " | appName='" + notif.appName
+            + "' | summary='" + notif.summary
+            + "' | body='" + notif.body + "'")
 
-        // Add to popup queue if under the limit
-        if (popups.length < maxPopups) {
-            _addPopup(notif)
-        }
+        // Cancel any previous timer for this id (notification update)
+        _cancelTimer(notif.id)
 
-        // Add to history unless transient
-        if (!notif.transient) {
-            _addHistory(notif)
-        }
-    }
-
-    function _addPopup(notif) {
-        var timeoutMs = notif.expireTimeout > 0
-            ? notif.expireTimeout * 1000
-            : defaultTimeoutMs
-
-        // Critical notifications don't auto-expire
+        // Don't auto-expire Critical urgency
         var isCritical = notif.urgency === NotificationUrgency.Critical
-
-        var entry = { notification: notif, timerId: null }
-
         if (!isCritical) {
-            entry.timerId = Qt.createQmlObject(
-                'import QtQuick; Timer { interval: ' + timeoutMs + '; running: true; repeat: false }',
-                root, "popupTimer"
+            var ms = notif.expireTimeout > 0 ? notif.expireTimeout * 1000 : defaultTimeoutMs
+            var timer = Qt.createQmlObject(
+                'import QtQuick; Timer { interval: ' + ms + '; running: true; repeat: false }',
+                root, "notifTimer_" + notif.id
             )
-            entry.timerId.triggered.connect(function() {
-                root._expirePopup(notif.id)
-            })
+            timer.triggered.connect((function(id) {
+                return function() { root._expireById(id) }
+            })(notif.id))
+            _timers[notif.id] = timer
         }
 
-        // Prepend — newest first
-        var updated = [entry].concat(popups)
-        popups = updated
-        popupsChanged()
+        // Add to history (always store, including transient screenshot events)
+        _addHistory(notif)
     }
 
-    function _expirePopup(notifId) {
-        _removePopupById(notifId, true)
+    function _cancelTimer(notifId) {
+        if (_timers[notifId]) {
+            _timers[notifId].stop()
+            _timers[notifId].destroy()
+            delete _timers[notifId]
+        }
     }
 
-    function _removePopupById(notifId, expire) {
-        var updated = []
-        for (var i = 0; i < popups.length; i++) {
-            if (popups[i].notification.id === notifId) {
-                // Clean up timer if present
-                if (popups[i].timerId) {
-                    popups[i].timerId.stop()
-                    popups[i].timerId.destroy()
-                }
-                if (expire) popups[i].notification.expire()
-            } else {
-                updated.push(popups[i])
+    function _expireById(notifId) {
+        _cancelTimer(notifId)
+        // Find and expire the notification via trackedNotifications
+        var vals = server.trackedNotifications.values
+        for (var i = 0; i < vals.length; i++) {
+            if (vals[i].id === notifId) {
+                vals[i].expire()
+                break
             }
         }
-        if (updated.length !== popups.length) {
-            popups = updated
-            popupsChanged()
-        }
-    }
-
-    // ── History ───────────────────────────────────────────────────────────
-    // Array of Notification objects. Newest first. Max 50.
-    // Transient notifications are never added here.
-
-    property var history: []
-
-    // signal historyChanged()
-
-    // Unread count — notifications added since last center open
-    property int unreadCount: 0
-
-    function _addHistory(notif) {
-        // Replace existing entry if same id (notification update)
-        var filtered = []
-        for (var i = 0; i < history.length; i++) {
-            if (history[i].id !== notif.id) filtered.push(history[i])
-        }
-
-        // Prepend newest, cap at maxHistory
-        filtered.unshift(notif)
-        if (filtered.length > maxHistory) filtered = filtered.slice(0, maxHistory)
-
-        history = filtered
-        unreadCount++
-        historyChanged()
     }
 
     // ── Public API — popups ───────────────────────────────────────────────
 
-    // Dismiss a popup by notification id (user swipes/clicks dismiss)
+    // Call from popup delegate onDismissed
     function dismissPopup(notifId) {
-        var updated = []
-        for (var i = 0; i < popups.length; i++) {
-            if (popups[i].notification.id === notifId) {
-                if (popups[i].timerId) {
-                    popups[i].timerId.stop()
-                    popups[i].timerId.destroy()
-                }
-                popups[i].notification.dismiss()
-            } else {
-                updated.push(popups[i])
+        _cancelTimer(notifId)
+        var vals = server.trackedNotifications.values
+        for (var i = 0; i < vals.length; i++) {
+            if (vals[i].id === notifId) {
+                vals[i].dismiss()
+                break
             }
         }
-        popups = updated
-        popupsChanged()
-        _removeFromHistory(notifId)
     }
 
     function dismissAllPopups() {
-        for (var i = 0; i < popups.length; i++) {
-            if (popups[i].timerId) {
-                popups[i].timerId.stop()
-                popups[i].timerId.destroy()
-            }
-            popups[i].notification.dismiss()
+        _timers = {}
+        var vals = server.trackedNotifications.values
+        for (var i = 0; i < vals.length; i++) {
+            vals[i].dismiss()
         }
-        popups = []
-        popupsChanged()
+    }
+
+    // ── History ───────────────────────────────────────────────────────────
+
+    property var history: []
+    property int unreadCount: 0
+
+    function _addHistory(notif) {
+        var filtered = []
+        for (var i = 0; i < history.length; i++) {
+            if (history[i].id !== notif.id) filtered.push(history[i])
+        }
+        filtered.unshift(notif)
+        if (filtered.length > maxHistory) filtered = filtered.slice(0, maxHistory)
+        history = filtered
+        unreadCount++
     }
 
     // ── Public API — history ──────────────────────────────────────────────
 
     function dismissNotification(notifId) {
         _removeFromHistory(notifId)
-        // Also remove from popups if still showing
-        _removePopupById(notifId)
-        // Find and dismiss the notification object
-        for (var i = 0; i < server.trackedNotifications.count; i++) {
-            var n = server.trackedNotifications.values[i]
-            if (n.id === notifId) { n.dismiss(); break }
-        }
+        _expireById(notifId)
     }
 
     function clearHistory() {
-        // Dismiss all tracked non-popup notifications
-        for (var i = 0; i < history.length; i++) {
-            var inPopup = false
-            for (var j = 0; j < popups.length; j++) {
-                if (popups[j].notification.id === history[i].id) { inPopup = true; break }
-            }
-            if (!inPopup) history[i].dismiss()
-        }
         history = []
         unreadCount = 0
-        historyChanged()
     }
 
     function _removeFromHistory(notifId) {
@@ -217,35 +159,29 @@ Singleton {
         }
         if (filtered.length !== history.length) {
             history = filtered
-            historyChanged()
         }
     }
 
-    // Call this when the notification center is opened to reset unread count
     function markAllRead() {
         unreadCount = 0
     }
 
-    // ── Convenience: total notification count for bar pill ────────────────
+    // ── Convenience ───────────────────────────────────────────────────────
 
-    readonly property int totalCount: history.length
+    readonly property int  totalCount:       history.length
     readonly property bool hasNotifications: history.length > 0
-    readonly property bool hasPopups: popups.length > 0
+    readonly property bool hasPopups:        server.trackedNotifications.values.length > 0
 
-    // ── Handle notification closed by remote app ──────────────────────────
-    // When an app requests its notification be closed, clean up our lists.
+    // ── Cleanup when notification closed remotely ─────────────────────────
 
     Connections {
         target: server.trackedNotifications
-        
-        function onObjectRemovedPost(notif, index) {
-            root._removePopupById(notif.id);
-            root._removeFromHistory(notif.id);
+        function onObjectRemovedPost(notif) {
+            root._cancelTimer(notif.id)
         }
     }
 
-    // ── Debug ─────────────────────────────────────────────────────────────
     Component.onCompleted: {
-        console.log("Notifications: service ready — keepOnReload: true, maxPopups:", maxPopups)
+        console.log("Notifications: service ready")
     }
 }
