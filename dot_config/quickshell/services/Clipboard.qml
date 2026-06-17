@@ -1,3 +1,4 @@
+// Service: clipboard — implemented 2026-06-17
 // services/Clipboard.qml
 // Clipboard history service — data only, no UI.
 //
@@ -94,7 +95,7 @@ Singleton {
 
     readonly property string _dbDir: {
         const xdgCache = StandardPaths.writableLocation(StandardPaths.CacheLocation)
-            .toString().replace(/\/quickshell$/, "")   // QS appends its own name; strip it
+            .toString().replace(/\/quickshell$/, "").replace(/^file:\/\//, "")   // QS appends its own name; strip it
         return xdgCache + "/cliphist"
     }
 
@@ -102,6 +103,7 @@ Singleton {
 
     readonly property string _scriptPath: {
         const home = StandardPaths.writableLocation(StandardPaths.HomeLocation)
+            .toString().replace(/^file:\/\//, "")
         return home + "/.config/quickshell/scripts/cliphist-decode.sh"
     }
 
@@ -109,6 +111,18 @@ Singleton {
     // Watches the cliphist db directory for CLOSE_WRITE/MOVED_TO events.
     // cliphist writes the db atomically (temp file + rename), so watching
     // the directory for MOVED_TO catches every write reliably.
+
+    Process {
+        id: mkdirProcess
+        command: ["mkdir", "-p", root._dbDir]
+        onExited: (code) => {
+            if (code === 0) {
+                watchProcess.running = true
+            } else {
+                console.warn("[Clipboard] Failed to create db directory:", root._dbDir)
+            }
+        }
+    }
 
     Process {
         id: watchProcess
@@ -121,10 +135,10 @@ Singleton {
             "--format", "%f",
             root._dbDir
         ]
-        running: true
+        running: false
 
         stdout: SplitParser {
-            onRead: function(line) {
+            onRead: (line) => {
                 // Only react to the db file itself, not unrelated files.
                 if (line.trim() === "db") {
                     reloadDebounce.restart()
@@ -132,7 +146,13 @@ Singleton {
             }
         }
 
-        onExited: function(code) {
+        stderr: SplitParser {
+            onRead: (line) => {
+                console.warn("[Clipboard] inotifywait stderr:", line.trim())
+            }
+        }
+
+        onExited: (code) => {
             if (code !== 0) {
                 console.warn("[Clipboard] inotifywait exited with code", code, "— retrying in 5s")
                 watchRestartTimer.start()
@@ -162,7 +182,7 @@ Singleton {
         command: ["cliphist", "list"]
 
         stdout: SplitParser {
-            onRead: function(line) {
+            onRead: (line) => {
                 const trimmed = line.trim()
                 if (trimmed.length === 0) return
 
@@ -181,7 +201,7 @@ Singleton {
             }
         }
 
-        onExited: function(code) {
+        onExited: (code) => {
             root.isLoading = false
             if (code !== 0) {
                 console.warn("[Clipboard] cliphist list exited with code", code)
@@ -195,7 +215,7 @@ Singleton {
 
     Process {
         id: decodeProcess
-        onExited: function(code) {
+        onExited: (code) => {
             if (code === 0) {
                 console.log("[Clipboard] Paste successful")
             } else if (code === 2) {
@@ -210,7 +230,7 @@ Singleton {
 
     Process {
         id: deleteProcess
-        onExited: function(code) {
+        onExited: (code) => {
             if (code === 0) {
                 // Reload will fire from inotifywait naturally.
                 // Belt-and-suspenders: if it doesn't within 300ms, force reload.
@@ -233,7 +253,7 @@ Singleton {
     Process {
         id: wipeProcess
         command: ["cliphist", "wipe"]
-        onExited: function(code) {
+        onExited: (code) => {
             if (code === 0) {
                 entryModel.clear()
                 console.log("[Clipboard] History wiped")
@@ -271,6 +291,7 @@ Singleton {
         console.log("[Clipboard]   DB dir:    ", root._dbDir)
         console.log("[Clipboard]   DB path:   ", root._dbPath)
         console.log("[Clipboard]   Script:    ", root._scriptPath)
+        mkdirProcess.running = true
         root._load()
     }
 }
