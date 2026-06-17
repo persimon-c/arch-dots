@@ -31,7 +31,7 @@ PopupWindow {
 
     // ── Visibility ────────────────────────────────────────────────────────
 
-    visible:   open && anchorItem !== null
+    visible:   (open && anchorItem !== null) || (card._anim > 0.01)
     grabFocus: false
 
     // ── Size driven by content ────────────────────────────────────────────
@@ -45,27 +45,28 @@ PopupWindow {
         id:     card
         margin: root.contentPadding
         radius: root.dropdownRadius
-        color: Qt.rgba(
-            root.bgColor.r,
-            root.bgColor.g,
-            root.bgColor.b,
-            root.bgOpacity
-        )
-        border.color: Qt.rgba(Colors.outline.r, Colors.outline.g, Colors.outline.b, 0.15)
-        border.width: 1
+        color: "transparent"
+        border.color: "transparent"
+        border.width: 0
+
+        AmbientSurface {
+            anchors.fill: parent
+            radius: card.radius
+            borderColor: Qt.rgba(Colors.outline.r, Colors.outline.g, Colors.outline.b, 0.35)
+            borderWidth: 1
+        }
 
         implicitWidth:  child ? child.implicitWidth  + root.contentPadding * 2 : 200
         implicitHeight: child ? child.implicitHeight + root.contentPadding * 2 : 100
 
         opacity: _anim
-        property real _anim: 0
-
-        onVisibleChanged: _anim = visible ? 1 : 0
+        property real _anim: (root.open && root.anchorItem !== null) ? 1 : 0
 
         Behavior on _anim {
-            NumberAnimation {
-                duration:    Theme.durationNormal
-                easing.type: card._anim === 1 ? Easing.OutQuart : Easing.InQuart
+            NumberAnimation { 
+                duration: (root.open && root.anchorItem !== null) ? Theme.durationSlow : Theme.durationFast
+                easing.type: Theme.easingType
+                easing.bezierCurve: (root.open && root.anchorItem !== null) ? Theme.easingCurveIn : Theme.easingCurveOut 
             }
         }
 
@@ -74,7 +75,7 @@ PopupWindow {
                 y: (1 - card._anim) * (root.preferredSide === "bottom" ? -8 : 8)
             },
             Scale {
-                xScale:   0.92 + card._anim * 0.08
+                xScale:   0.90 + card._anim * 0.10
                 yScale:   xScale
                 origin.x: card.width / 2
                 origin.y: root.preferredSide === "bottom" ? 0 : card.height
