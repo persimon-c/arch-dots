@@ -1,6 +1,7 @@
+// Service: github — implemented 2026-06-17
 // Github.qml
 // Service: GitHub heatmap + activity feed + local repo list.
-// No UI. All data fetched on explicit refresh() call — no background polling.
+// No UI. All data fetched on explicit refresh() call + 5-min TTL background polling.
 // Three parallel Process calls, each independent. Failure of one does not affect others.
 //
 // Consumers bind to:
@@ -57,9 +58,28 @@ Singleton {
 
     // ── Public API ────────────────────────────────────────────────────────────
     function refresh() {
+        refreshTimer.restart();
         _startHeatmap();
         _startActivity();
         _startRepos();
+    }
+
+    Timer {
+        id: refreshTimer
+        interval: 300000 // 5 minutes
+        repeat: true
+        running: false
+        onTriggered: {
+            console.log("[Github] Periodic refresh triggered");
+            _startHeatmap();
+            _startActivity();
+            _startRepos();
+        }
+    }
+
+    Component.onCompleted: {
+        console.log("[Github] Service loaded, doing initial fetch");
+        refresh();
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
